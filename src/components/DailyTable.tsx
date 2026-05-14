@@ -6,9 +6,10 @@ import { Download } from "lucide-react";
 import type { DayResult } from "@/lib/punch-types";
 import { fmtHM } from "@/lib/hours-calc";
 
-function statusBadge(s: DayResult["status"]) {
-  if (s === "full") return <Badge className="bg-emerald-600 hover:bg-emerald-600">Full</Badge>;
-  if (s === "half") return <Badge className="bg-amber-500 hover:bg-amber-500">Half</Badge>;
+function statusBadge(d: DayResult) {
+  if (d.isMo) return <Badge className="bg-indigo-600 hover:bg-indigo-600">MO</Badge>;
+  if (d.status === "full") return <Badge className="bg-emerald-600 hover:bg-emerald-600">Full</Badge>;
+  if (d.status === "half") return <Badge className="bg-amber-500 hover:bg-amber-500">Half</Badge>;
   return <Badge variant="destructive">Absent</Badge>;
 }
 
@@ -71,7 +72,7 @@ export function DailyTable({ days }: { days: DayResult[] }) {
                 <TableCell className="font-mono text-xs">{d.lastOut ?? "—"}</TableCell>
                 <TableCell>{fmtHM(d.workedMins)}</TableCell>
                 <TableCell className="text-muted-foreground">{fmtHM(d.lunchMins)}</TableCell>
-                <TableCell>{statusBadge(d.status)}</TableCell>
+                <TableCell>{statusBadge(d)}</TableCell>
                 <TableCell className="space-x-1 text-xs">
                   {d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
                   {d.extraMins > 0 && <Badge variant="outline" className="border-blue-500 text-blue-600">+{fmtHM(d.extraMins)} extra</Badge>}
