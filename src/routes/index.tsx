@@ -5,9 +5,11 @@ import { DailyTable } from "@/components/DailyTable";
 import { MonthlySummary } from "@/components/MonthlySummary";
 import { Charts } from "@/components/Charts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { parsePunches } from "@/lib/punch-parser";
-import { computeAllDays, groupByCycle } from "@/lib/hours-calc";
-import { Clock } from "lucide-react";
+import { computeAllDays, groupByCycle, parseMoDates } from "@/lib/hours-calc";
+import { Clock, CalendarDays } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,19 +23,27 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [raw, setRaw] = useState("");
+  const [moRaw, setMoRaw] = useState("");
   const [submitted, setSubmitted] = useState("");
+  const [submittedMo, setSubmittedMo] = useState("");
   const [selectedCycle, setSelectedCycle] = useState<string>("");
 
   const cycles = useMemo(() => {
     if (!submitted.trim()) return [];
-    const days = computeAllDays(parsePunches(submitted));
+    const moDates = parseMoDates(submittedMo);
+    const days = computeAllDays(parsePunches(submitted), moDates);
     return groupByCycle(days);
-  }, [submitted]);
+  }, [submitted, submittedMo]);
 
   const activeCycle = useMemo(() => {
     if (!cycles.length) return null;
     return cycles.find((c) => c.start === selectedCycle) ?? cycles[cycles.length - 1];
   }, [cycles, selectedCycle]);
+
+  const handleCalc = () => {
+    setSubmitted(raw);
+    setSubmittedMo(moRaw);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,7 +58,26 @@ function Index() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        <PunchInput value={raw} onChange={setRaw} onCalculate={() => setSubmitted(raw)} />
+        <PunchInput value={raw} onChange={setRaw} onCalculate={handleCalc} />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CalendarDays className="h-4 w-4" /> MO Dates (optional)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Textarea
+              value={moRaw}
+              onChange={(e) => setMoRaw(e.target.value)}
+              placeholder="One date per line, comma or space-separated. e.g.&#10;15.04.2026&#10;22.04.2026, 30.04.2026"
+              className="min-h-[80px] font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              On MO dates short hours are not calculated. Click Calculate above to apply.
+            </p>
+          </CardContent>
+        </Card>
 
         {cycles.length > 0 && activeCycle && (
           <>
