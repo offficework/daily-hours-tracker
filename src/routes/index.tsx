@@ -1,15 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { format } from "date-fns";
 import { PunchInput } from "@/components/PunchInput";
 import { DailyTable } from "@/components/DailyTable";
 import { MonthlySummary } from "@/components/MonthlySummary";
 import { Charts } from "@/components/Charts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 import { parsePunches } from "@/lib/punch-parser";
-import { computeAllDays, groupByCycle, parseMoDates } from "@/lib/hours-calc";
-import { Clock, CalendarDays } from "lucide-react";
+import { computeAllDays, groupByCycle } from "@/lib/hours-calc";
+import { Clock, CalendarDays, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,29 +26,40 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function Index() {
   const [raw, setRaw] = useState("");
-  const [moRaw, setMoRaw] = useState("");
   const [submitted, setSubmitted] = useState("");
-  const [submittedMo, setSubmittedMo] = useState("");
+  const [moDates, setMoDates] = useState<Date[]>([]);
   const [selectedCycle, setSelectedCycle] = useState<string>("");
+
+  const moKey = useMemo(() => moDates.map(toIsoDate).sort().join(","), [moDates]);
 
   const cycles = useMemo(() => {
     if (!submitted.trim()) return [];
-    const moDates = parseMoDates(submittedMo);
-    const days = computeAllDays(parsePunches(submitted), moDates);
+    const moSet = new Set(moDates.map(toIsoDate));
+    const days = computeAllDays(parsePunches(submitted), moSet);
     return groupByCycle(days);
-  }, [submitted, submittedMo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted, moKey]);
 
   const activeCycle = useMemo(() => {
     if (!cycles.length) return null;
     return cycles.find((c) => c.start === selectedCycle) ?? cycles[cycles.length - 1];
   }, [cycles, selectedCycle]);
 
-  const handleCalc = () => {
-    setSubmitted(raw);
-    setSubmittedMo(moRaw);
-  };
+  const handleCalc = () => setSubmitted(raw);
+
+  const removeMo = (iso: string) =>
+    setMoDates((prev) => prev.filter((d) => toIsoDate(d) !== iso));
+
+  const sortedMo = [...moDates].sort((a, b) => a.getTime() - b.getTime());
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,15 +82,53 @@ function Index() {
               <CalendarDays className="h-4 w-4" /> MO Dates (optional)
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Textarea
-              value={moRaw}
-              onChange={(e) => setMoRaw(e.target.value)}
-              placeholder="One date per line, comma or space-separated. e.g.&#10;15.04.2026&#10;22.04.2026, 30.04.2026"
-              className="min-h-[80px] font-mono text-sm"
-            />
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal")}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {moDates.length ? `${moDates.length} MO date${moDates.length === 1 ? "" : "s"} selected` : "Pick MO dates"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="multiple"
+                    selected={moDates}
+                    onSelect={(dates) => setMoDates(dates ?? [])}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              {moDates.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setMoDates([])}>
+                  Clear all
+                </Button>
+              )}
+            </div>
+            {sortedMo.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {sortedMo.map((d) => {
+                  const iso = toIsoDate(d);
+                  return (
+                    <Badge key={iso} variant="secondary" className="gap-1 pr-1">
+                      {format(d, "dd MMM yyyy")}
+                      <button
+                        type="button"
+                        onClick={() => removeMo(iso)}
+                        className="rounded hover:bg-muted-foreground/20 p-0.5"
+                        aria-label={`Remove ${iso}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
-              On MO dates short hours are not calculated. Click Calculate above to apply.
+              MO dates are excluded from short-hour and violation calculations and applied automatically.
             </p>
           </CardContent>
         </Card>
