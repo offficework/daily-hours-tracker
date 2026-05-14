@@ -15,6 +15,9 @@ export interface DayResult {
   workedMins: number;
   lunchMins: number;
   status: "full" | "half" | "absent";
+  shortMins: number; // shortfall from required (full or half target)
+  extraMins: number; // worked minutes counted as extra (when < 2h, full leave deducted)
+  fullDayLeave: boolean; // true when < 2h ⇒ 1 full day leave deducted
   late: boolean;
   earlyOut: boolean;
   notes: string[];
@@ -30,8 +33,12 @@ export interface CycleSummary {
   halfDays: number;
   absents: number;
   totalMins: number;
+  totalShortMins: number;
+  totalExtraMins: number;
   violations: number;
-  leaveDeducted: number; // 0 or 0.5
+  leaveDeducted: number; // total days: full-day leaves from <2h days + 0.5 if violations>3
+  fullDayLeaves: number;
+  violationLeave: number; // 0 or 0.5
 }
 
 export const REQUIRED_MINS = 8 * 60 + 40; // 520
