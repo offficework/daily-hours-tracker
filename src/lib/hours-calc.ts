@@ -175,13 +175,20 @@ export function groupByCycle(days: DayResult[]): CycleSummary[] {
         halfDays: 0,
         absents: 0,
         totalMins: 0,
+        totalShortMins: 0,
+        totalExtraMins: 0,
         violations: 0,
         leaveDeducted: 0,
+        fullDayLeaves: 0,
+        violationLeave: 0,
       });
     }
     const summary = map.get(key)!;
     summary.days.push(day);
     summary.totalMins += day.workedMins;
+    summary.totalShortMins += day.shortMins;
+    summary.totalExtraMins += day.extraMins;
+    if (day.fullDayLeave) summary.fullDayLeaves += 1;
     if (day.status === "full") summary.fullDays += 1;
     else if (day.status === "half") summary.halfDays += 1;
     else summary.absents += 1;
@@ -189,7 +196,8 @@ export function groupByCycle(days: DayResult[]): CycleSummary[] {
     if (day.earlyOut) summary.violations += 1;
   }
   for (const s of map.values()) {
-    s.leaveDeducted = s.violations > 3 ? 0.5 : 0;
+    s.violationLeave = s.violations > 3 ? 0.5 : 0;
+    s.leaveDeducted = s.fullDayLeaves + s.violationLeave;
     s.days.sort((a, b) => a.date.localeCompare(b.date));
   }
   return [...map.values()].sort((a, b) => a.start.localeCompare(b.start));
