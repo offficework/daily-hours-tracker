@@ -81,7 +81,7 @@ function Index() {
 
         {cycles.length > 0 && activeCycle && (
           <>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium">Cycle:</span>
               <Select value={activeCycle.start} onValueChange={setSelectedCycle}>
                 <SelectTrigger className="w-[280px]">
@@ -93,6 +93,27 @@ function Index() {
                   ))}
                 </SelectContent>
               </Select>
+              {(() => {
+                const totExtra = cycles.reduce((s, c) => s + c.totalExtraMins, 0);
+                const totShort = cycles.reduce((s, c) => s + c.totalShortMins, 0);
+                const totWorked = cycles.reduce((s, c) => s + c.totalMins, 0);
+                const net = totExtra - totShort;
+                const fmt = (m: number) => {
+                  const h = Math.floor(Math.abs(m) / 60);
+                  const mm = Math.round(Math.abs(m) % 60);
+                  return `${m < 0 ? "-" : ""}${h}h ${String(mm).padStart(2, "0")}m`;
+                };
+                return (
+                  <div className="ml-auto flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-md border px-2 py-1">Overall worked: <b>{fmt(totWorked)}</b></span>
+                    <span className="rounded-md border px-2 py-1">Overall extra: <b className="text-emerald-700">{fmt(totExtra)}</b></span>
+                    <span className="rounded-md border px-2 py-1">Overall short: <b className="text-red-700">{fmt(totShort)}</b></span>
+                    <span className={`rounded-md border px-2 py-1 ${net >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
+                      Overall net: <b>{net >= 0 ? "+" : ""}{fmt(net)}</b>
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
             <MonthlySummary cycle={activeCycle} />
