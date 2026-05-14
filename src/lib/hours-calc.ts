@@ -109,8 +109,8 @@ export function computeDay(date: string, dayPunches: Punch[], isMo = false): Day
   if (codes.has("POUT")) notes.push("POUT");
   if (isMo) notes.push("MO (no short hours)");
 
-  const late = firstIn.minutes > LATE_CUTOFF_MINS;
-  const earlyOut = lastOut.minutes < EARLY_CUTOFF_MINS;
+  const late = isMo ? false : firstIn.minutes > LATE_CUTOFF_MINS;
+  const earlyOut = isMo ? false : lastOut.minutes < EARLY_CUTOFF_MINS;
 
   // Status (Rules 6, 7, 8)
   let status: DayResult["status"];
