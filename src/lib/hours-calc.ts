@@ -133,15 +133,15 @@ export function computeDay(date: string, dayPunches: Punch[], isMo = false): Day
     if (computedWork >= HALF_MINS) extraMins = computedWork - HALF_MINS;
     else shortMins = HALF_MINS - computedWork;
   } else if (computedWork < REQUIRED_MINS) {
-    status = "half";
-    shortMins = HALF_MINS - computedWork > 0 ? Math.max(0, HALF_MINS - computedWork) : 0;
-    // Between half target and full required: treat as full-day shortfall
     status = "full";
     shortMins = REQUIRED_MINS - computedWork;
   } else {
     status = "full";
     extraMins = computedWork - REQUIRED_MINS;
   }
+
+  shortMins = Math.round(shortMins);
+  extraMins = Math.round(extraMins);
 
   // Rules 9 & 14: no short hours for OOUT days or MO days
   if (hasOout || isMo) shortMins = 0;
