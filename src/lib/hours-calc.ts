@@ -83,15 +83,30 @@ export function computeDay(date: string, dayPunches: Punch[]): DayResult {
 
   if (computedWork < 0) computedWork = 0;
 
-  // Status
+  // Status (per Rule 8)
+  // - worked < 2h ⇒ absent: full-day leave deducted, hours count as extra
+  // - worked >= 8h40 ⇒ full
+  // - else ⇒ half (target 4h20); shortMins = max(0, target - worked)
+  // - first punch >= 11:00 forces half (cannot earn full-day credit)
   const late = firstIn.minutes > LATE_CUTOFF_MINS;
   const earlyOut = lastOut.minutes < EARLY_CUTOFF_MINS;
   let status: DayResult["status"];
-  if (computedWork < MIN_HALF_MINS) status = "absent";
-  else if (firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF) status = "half";
-  else if (computedWork < FULL_DAY_MIN_MINS) status = "half";
-  else if (computedWork < REQUIRED_MINS) status = "half";
-  else status = "full";
+  let shortMins = 0;
+  let extraMins = 0;
+  let fullDayLeave = false;
+
+  if (computedWork < MIN_HALF_MINS) {
+    status = "absent";
+    fullDayLeave = true;
+    extraMins = Math.round(computedWork);
+    notes.push("< 2h — full day leave; hours = extra");
+  } else if (firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF || computedWork < REQUIRED_MINS) {
+    status = "half";
+    shortMins = Math.max(0, MIN_HALF_TARGET - computedWork);
+  } else {
+    status = "full";
+    shortMins = 0;
+  }
 
   return {
     date,
@@ -100,6 +115,9 @@ export function computeDay(date: string, dayPunches: Punch[]): DayResult {
     workedMins: Math.round(computedWork),
     lunchMins: Math.round(lunchMins + defaultLunch),
     status,
+    shortMins: Math.round(shortMins),
+    extraMins,
+    fullDayLeave,
     late,
     earlyOut,
     notes,
