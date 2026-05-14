@@ -10,6 +10,9 @@ import {
   HALF_DAY_PUNCH_CUTOFF,
 } from "./punch-types";
 
+const LUNCH_START = 12 * 60; // 720
+const LUNCH_END = 12 * 60 + 30; // 750
+
 export function fmtHM(mins: number): string {
   if (!isFinite(mins) || mins <= 0) return "0h 00m";
   const h = Math.floor(mins / 60);
@@ -17,10 +20,34 @@ export function fmtHM(mins: number): string {
   return `${h}h ${String(m).padStart(2, "0")}m`;
 }
 
-export function computeDay(date: string, dayPunches: Punch[]): DayResult {
+function overlap(a1: number, a2: number, b1: number, b2: number) {
+  return Math.max(0, Math.min(a2, b2) - Math.max(a1, b1));
+}
+
+export function computeDay(date: string, dayPunches: Punch[], isMo = false): DayResult {
   const punches = [...dayPunches].sort((a, b) => a.minutes - b.minutes);
   const notes: string[] = [];
+
   if (punches.length === 0) {
+    if (isMo) {
+      return {
+        date,
+        firstIn: null,
+        lastOut: null,
+        workedMins: REQUIRED_MINS,
+        lunchMins: 0,
+        status: "full",
+        shortMins: 0,
+        extraMins: 0,
+        fullDayLeave: false,
+        late: false,
+        earlyOut: false,
+        notes: ["MO (no short hours)"],
+        punches,
+        isMo: true,
+        isOout: false,
+      };
+    }
     return {
       date,
       firstIn: null,
@@ -35,85 +62,92 @@ export function computeDay(date: string, dayPunches: Punch[]): DayResult {
       earlyOut: false,
       notes: ["No punches"],
       punches,
+      isMo: false,
+      isOout: false,
     };
   }
 
-  // Pair sequentially. LWRK pairs are lunch (subtract). Other pairs are work.
-  let workMins = 0;
-  let lunchMins = 0;
+  // Pair sequentially; LWRK pairs are lunch (deducted EXCEPT 12:00–12:30 portion which is protected per Rule 2).
+  let lwrkDeduct = 0;
+  let lwrkRawMins = 0;
+  let lwrkProtected = 0;
+  let hasLwrk = false;
+  let hasOout = false;
 
-  // Group into segments by code-pairs. Pair every two consecutive punches.
   for (let i = 0; i + 1 < punches.length; i += 2) {
     const a = punches[i];
     const b = punches[i + 1];
     const dur = b.minutes - a.minutes;
     if (dur <= 0) continue;
     const isLwrk = a.code === "LWRK" || b.code === "LWRK";
+    const isOoutPair = a.code === "OOUT" || b.code === "OOUT";
+    if (isOoutPair) hasOout = true;
     if (isLwrk) {
-      lunchMins += dur;
-    } else {
-      workMins += dur;
+      hasLwrk = true;
+      lwrkRawMins += dur;
+      const prot = overlap(a.minutes, b.minutes, LUNCH_START, LUNCH_END);
+      lwrkProtected += prot;
+      lwrkDeduct += dur - prot; // 12:00–12:30 portion is NOT deducted
     }
   }
 
   const codes = new Set(punches.map((p) => p.code));
-  const hasLwrk = codes.has("LWRK");
-  const hasOout = codes.has("OOUT");
+  if (codes.has("OOUT")) hasOout = true;
 
-  // Worked time = total span between first and last MINUS lunch segments
-  // Recompute using span approach for accuracy when pairs intermix
   const firstIn = punches[0];
   const lastOut = punches[punches.length - 1];
   const totalSpan = lastOut.minutes - firstIn.minutes;
-  let computedWork = totalSpan - lunchMins;
-
-  // Default lunch deduction if no LWRK and no OOUT, and span crosses 12:00-12:30
-  let defaultLunch = 0;
-  if (!hasLwrk && !hasOout) {
-    if (firstIn.minutes <= 12 * 60 && lastOut.minutes >= 12 * 60 + 30) {
-      defaultLunch = 30;
-      computedWork -= 30;
-      notes.push("Auto lunch −30m");
-    }
-  }
-  if (hasLwrk) notes.push("LWRK");
-  if (hasOout) notes.push("OOUT (no lunch)");
-  if (codes.has("REG")) notes.push("REG");
-  if (codes.has("POUT")) notes.push("POUT");
-
+  let computedWork = totalSpan - lwrkDeduct;
   if (computedWork < 0) computedWork = 0;
 
-  // Status (per Rule 8)
-  // - worked < 2h ⇒ absent: full-day leave deducted, hours count as extra
-  // - worked >= 8h40 ⇒ full
-  // - else ⇒ half (target 4h20); shortMins = max(0, target - worked)
-  // - first punch >= 11:00 forces half (cannot earn full-day credit)
+  if (hasLwrk) {
+    notes.push(
+      lwrkProtected > 0
+        ? `LWRK ${fmtHM(lwrkRawMins)} (−${fmtHM(lwrkDeduct)}, ${fmtHM(lwrkProtected)} in 12:00–12:30 kept)`
+        : `LWRK ${fmtHM(lwrkRawMins)} deducted`
+    );
+  }
+  if (hasOout) notes.push("OOUT (no short hours)");
+  if (codes.has("REG")) notes.push("REG");
+  if (codes.has("POUT")) notes.push("POUT");
+  if (isMo) notes.push("MO (no short hours)");
+
   const late = firstIn.minutes > LATE_CUTOFF_MINS;
   const earlyOut = lastOut.minutes < EARLY_CUTOFF_MINS;
+
+  // Status (Rules 6, 7, 8)
   let status: DayResult["status"];
   let shortMins = 0;
   let extraMins = 0;
   let fullDayLeave = false;
 
-  if (computedWork < MIN_HALF_MINS) {
+  if (isMo) {
+    status = "full";
+  } else if (computedWork < MIN_HALF_MINS) {
     status = "absent";
     fullDayLeave = true;
     extraMins = Math.round(computedWork);
     notes.push("< 2h — full day leave; hours = extra");
-  } else if (firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF || computedWork < REQUIRED_MINS) {
+  } else if (
+    firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF || // Rule 7
+    computedWork < 5 * 60 || // Rule 6
+    computedWork < REQUIRED_MINS
+  ) {
     status = "half";
     shortMins = Math.max(0, HALF_MINS - computedWork);
   } else {
     status = "full";
-    shortMins = 0;
   }
+
+  // Rules 9 & 14: no short hours for OOUT days or MO days
+  if (hasOout || isMo) shortMins = 0;
 
   return {
     date,
     firstIn: firstIn.time,
     lastOut: lastOut.time,
     workedMins: Math.round(computedWork),
-    lunchMins: Math.round(lunchMins + defaultLunch),
+    lunchMins: Math.round(lwrkDeduct),
     status,
     shortMins: Math.round(shortMins),
     extraMins,
@@ -122,17 +156,23 @@ export function computeDay(date: string, dayPunches: Punch[]): DayResult {
     earlyOut,
     notes,
     punches,
+    isMo,
+    isOout: hasOout,
   };
 }
 
-export function computeAllDays(punches: Punch[]): DayResult[] {
+export function computeAllDays(punches: Punch[], moDates: Set<string> = new Set()): DayResult[] {
   const byDate = new Map<string, Punch[]>();
   for (const p of punches) {
     if (!byDate.has(p.date)) byDate.set(p.date, []);
     byDate.get(p.date)!.push(p);
   }
+  // include MO dates that have no punches
+  for (const d of moDates) {
+    if (!byDate.has(d)) byDate.set(d, []);
+  }
   const dates = [...byDate.keys()].sort();
-  return dates.map((d) => computeDay(d, byDate.get(d)!));
+  return dates.map((d) => computeDay(d, byDate.get(d)!, moDates.has(d)));
 }
 
 // Cycle = 23rd of month X to 22nd of month X+1
@@ -196,9 +236,27 @@ export function groupByCycle(days: DayResult[]): CycleSummary[] {
     if (day.earlyOut) summary.violations += 1;
   }
   for (const s of map.values()) {
-    s.violationLeave = s.violations > 3 ? 0.5 : 0;
+    s.violationLeave = s.violations > 3 ? 0.5 : 0; // Rule 10
     s.leaveDeducted = s.fullDayLeaves + s.violationLeave;
     s.days.sort((a, b) => a.date.localeCompare(b.date));
   }
   return [...map.values()].sort((a, b) => a.start.localeCompare(b.start));
+}
+
+// Helpers for MO date input
+export function parseMoDates(raw: string): Set<string> {
+  const out = new Set<string>();
+  if (!raw.trim()) return out;
+  const tokens = raw.split(/[\s,;]+/).filter(Boolean);
+  for (const t of tokens) {
+    // dd.mm.yyyy or dd/mm/yyyy or yyyy-mm-dd
+    let m = /^(\d{2})[./-](\d{2})[./-](\d{4})$/.exec(t);
+    if (m) {
+      out.add(`${m[3]}-${m[2]}-${m[1]}`);
+      continue;
+    }
+    m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+    if (m) out.add(t);
+  }
+  return out;
 }
