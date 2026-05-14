@@ -236,8 +236,10 @@ export function groupByCycle(days: DayResult[]): CycleSummary[] {
     if (day.status === "full") summary.fullDays += 1;
     else if (day.status === "half") summary.halfDays += 1;
     else summary.absents += 1;
-    if (day.late) summary.violations += 1;
-    if (day.earlyOut) summary.violations += 1;
+    if (!day.isMo) {
+      if (day.late) summary.violations += 1;
+      if (day.earlyOut) summary.violations += 1;
+    }
   }
   for (const s of map.values()) {
     s.violationLeave = s.violations > 3 ? 0.5 : 0; // Rule 10
