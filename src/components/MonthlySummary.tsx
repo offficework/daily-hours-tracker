@@ -28,6 +28,18 @@ export function MonthlySummary({ cycle }: { cycle: CycleSummary }) {
         <Stat label="Total Hours" value={fmtHM(cycle.totalMins)} icon={<Clock className="h-5 w-5" />} tone="bg-blue-100 text-blue-700" />
         <Stat label="Short Hours" value={fmtHM(cycle.totalShortMins)} icon={<MinusCircle className="h-5 w-5" />} tone={cycle.totalShortMins > 0 ? "bg-red-100 text-red-700" : "bg-muted"} />
         <Stat label="Extra Hours" value={fmtHM(cycle.totalExtraMins)} icon={<Clock className="h-5 w-5" />} tone={cycle.totalExtraMins > 0 ? "bg-blue-100 text-blue-700" : "bg-muted"} />
+        {(() => {
+          const net = cycle.totalExtraMins - cycle.totalShortMins;
+          const sign = net < 0 ? "-" : "+";
+          return (
+            <Stat
+              label="Net Hours"
+              value={`${sign}${fmtHM(Math.abs(net))}`}
+              icon={<Clock className="h-5 w-5" />}
+              tone={net >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}
+            />
+          );
+        })()}
         <Stat label="Violations" value={String(cycle.violations)} icon={<AlertTriangle className="h-5 w-5" />} tone={cycle.violations > 3 ? "bg-red-100 text-red-700" : "bg-muted"} />
         <Stat
           label="Leave Deducted"
