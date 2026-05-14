@@ -26,8 +26,15 @@ export function MonthlySummary({ cycle }: { cycle: CycleSummary }) {
         <Stat label="Half Days" value={String(cycle.halfDays)} icon={<MinusCircle className="h-5 w-5" />} tone="bg-amber-100 text-amber-700" />
         <Stat label="Absents" value={String(cycle.absents)} icon={<AlertTriangle className="h-5 w-5" />} tone="bg-red-100 text-red-700" />
         <Stat label="Total Hours" value={fmtHM(cycle.totalMins)} icon={<Clock className="h-5 w-5" />} tone="bg-blue-100 text-blue-700" />
+        <Stat label="Short Hours" value={fmtHM(cycle.totalShortMins)} icon={<MinusCircle className="h-5 w-5" />} tone={cycle.totalShortMins > 0 ? "bg-red-100 text-red-700" : "bg-muted"} />
+        <Stat label="Extra Hours" value={fmtHM(cycle.totalExtraMins)} icon={<Clock className="h-5 w-5" />} tone={cycle.totalExtraMins > 0 ? "bg-blue-100 text-blue-700" : "bg-muted"} />
         <Stat label="Violations" value={String(cycle.violations)} icon={<AlertTriangle className="h-5 w-5" />} tone={cycle.violations > 3 ? "bg-red-100 text-red-700" : "bg-muted"} />
-        <Stat label="Leave Deducted" value={cycle.leaveDeducted ? `${cycle.leaveDeducted} day` : "—"} icon={<MinusCircle className="h-5 w-5" />} tone={cycle.leaveDeducted ? "bg-red-100 text-red-700" : "bg-muted"} />
+        <Stat
+          label="Leave Deducted"
+          value={cycle.leaveDeducted ? `${cycle.leaveDeducted} day${cycle.leaveDeducted === 1 ? "" : "s"}` : "—"}
+          icon={<MinusCircle className="h-5 w-5" />}
+          tone={cycle.leaveDeducted ? "bg-red-100 text-red-700" : "bg-muted"}
+        />
       </CardContent>
     </Card>
   );
