@@ -15,7 +15,7 @@ function statusBadge(s: DayResult["status"]) {
 export function DailyTable({ days }: { days: DayResult[] }) {
   const exportCsv = () => {
     const rows = [
-      ["Date", "First In", "Last Out", "Worked", "Lunch", "Status", "Late", "Early Out", "Notes"],
+      ["Date", "First In", "Last Out", "Worked", "Lunch", "Status", "Short", "Extra", "Late", "Early Out", "Notes"],
       ...days.map((d) => [
         d.date,
         d.firstIn ?? "",
@@ -23,6 +23,8 @@ export function DailyTable({ days }: { days: DayResult[] }) {
         fmtHM(d.workedMins),
         fmtHM(d.lunchMins),
         d.status,
+        d.shortMins ? fmtHM(d.shortMins) : "",
+        d.extraMins ? fmtHM(d.extraMins) : "",
         d.late ? "Y" : "",
         d.earlyOut ? "Y" : "",
         d.notes.join("; "),
@@ -56,6 +58,7 @@ export function DailyTable({ days }: { days: DayResult[] }) {
               <TableHead>Worked</TableHead>
               <TableHead>Lunch</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Short / Extra</TableHead>
               <TableHead>Violations</TableHead>
               <TableHead>Notes</TableHead>
             </TableRow>
@@ -69,6 +72,11 @@ export function DailyTable({ days }: { days: DayResult[] }) {
                 <TableCell>{fmtHM(d.workedMins)}</TableCell>
                 <TableCell className="text-muted-foreground">{fmtHM(d.lunchMins)}</TableCell>
                 <TableCell>{statusBadge(d.status)}</TableCell>
+                <TableCell className="space-x-1 text-xs">
+                  {d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
+                  {d.extraMins > 0 && <Badge variant="outline" className="border-blue-500 text-blue-600">+{fmtHM(d.extraMins)} extra</Badge>}
+                  {d.fullDayLeave && <Badge variant="destructive">1d leave</Badge>}
+                </TableCell>
                 <TableCell className="space-x-1">
                   {d.late && <Badge variant="outline" className="border-red-500 text-red-600">Late</Badge>}
                   {d.earlyOut && <Badge variant="outline" className="border-orange-500 text-orange-600">Early</Badge>}
