@@ -3,11 +3,11 @@ import {
   type DayResult,
   type CycleSummary,
   REQUIRED_MINS,
+  HALF_MINS,
   MIN_HALF_MINS,
   LATE_CUTOFF_MINS,
   EARLY_CUTOFF_MINS,
   HALF_DAY_PUNCH_CUTOFF,
-  FULL_DAY_MIN_MINS,
 } from "./punch-types";
 
 export function fmtHM(mins: number): string {
@@ -28,6 +28,9 @@ export function computeDay(date: string, dayPunches: Punch[]): DayResult {
       workedMins: 0,
       lunchMins: 0,
       status: "absent",
+      shortMins: 0,
+      extraMins: 0,
+      fullDayLeave: true,
       late: false,
       earlyOut: false,
       notes: ["No punches"],
@@ -80,15 +83,30 @@ export function computeDay(date: string, dayPunches: Punch[]): DayResult {
 
   if (computedWork < 0) computedWork = 0;
 
-  // Status
+  // Status (per Rule 8)
+  // - worked < 2h ⇒ absent: full-day leave deducted, hours count as extra
+  // - worked >= 8h40 ⇒ full
+  // - else ⇒ half (target 4h20); shortMins = max(0, target - worked)
+  // - first punch >= 11:00 forces half (cannot earn full-day credit)
   const late = firstIn.minutes > LATE_CUTOFF_MINS;
   const earlyOut = lastOut.minutes < EARLY_CUTOFF_MINS;
   let status: DayResult["status"];
-  if (computedWork < MIN_HALF_MINS) status = "absent";
-  else if (firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF) status = "half";
-  else if (computedWork < FULL_DAY_MIN_MINS) status = "half";
-  else if (computedWork < REQUIRED_MINS) status = "half";
-  else status = "full";
+  let shortMins = 0;
+  let extraMins = 0;
+  let fullDayLeave = false;
+
+  if (computedWork < MIN_HALF_MINS) {
+    status = "absent";
+    fullDayLeave = true;
+    extraMins = Math.round(computedWork);
+    notes.push("< 2h — full day leave; hours = extra");
+  } else if (firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF || computedWork < REQUIRED_MINS) {
+    status = "half";
+    shortMins = Math.max(0, HALF_MINS - computedWork);
+  } else {
+    status = "full";
+    shortMins = 0;
+  }
 
   return {
     date,
@@ -97,6 +115,9 @@ export function computeDay(date: string, dayPunches: Punch[]): DayResult {
     workedMins: Math.round(computedWork),
     lunchMins: Math.round(lunchMins + defaultLunch),
     status,
+    shortMins: Math.round(shortMins),
+    extraMins,
+    fullDayLeave,
     late,
     earlyOut,
     notes,
@@ -154,13 +175,20 @@ export function groupByCycle(days: DayResult[]): CycleSummary[] {
         halfDays: 0,
         absents: 0,
         totalMins: 0,
+        totalShortMins: 0,
+        totalExtraMins: 0,
         violations: 0,
         leaveDeducted: 0,
+        fullDayLeaves: 0,
+        violationLeave: 0,
       });
     }
     const summary = map.get(key)!;
     summary.days.push(day);
     summary.totalMins += day.workedMins;
+    summary.totalShortMins += day.shortMins;
+    summary.totalExtraMins += day.extraMins;
+    if (day.fullDayLeave) summary.fullDayLeaves += 1;
     if (day.status === "full") summary.fullDays += 1;
     else if (day.status === "half") summary.halfDays += 1;
     else summary.absents += 1;
@@ -168,7 +196,8 @@ export function groupByCycle(days: DayResult[]): CycleSummary[] {
     if (day.earlyOut) summary.violations += 1;
   }
   for (const s of map.values()) {
-    s.leaveDeducted = s.violations > 3 ? 0.5 : 0;
+    s.violationLeave = s.violations > 3 ? 0.5 : 0;
+    s.leaveDeducted = s.fullDayLeaves + s.violationLeave;
     s.days.sort((a, b) => a.date.localeCompare(b.date));
   }
   return [...map.values()].sort((a, b) => a.start.localeCompare(b.start));
