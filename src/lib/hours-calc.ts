@@ -127,13 +127,20 @@ export function computeDay(date: string, dayPunches: Punch[], isMo = false): Day
     notes.push("< 2h — full day leave; hours = extra");
   } else if (
     firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF || // Rule 7
-    computedWork < 5 * 60 || // Rule 6
-    computedWork < REQUIRED_MINS
+    computedWork < 5 * 60 // Rule 6
   ) {
     status = "half";
-    shortMins = Math.max(0, HALF_MINS - computedWork);
+    if (computedWork >= HALF_MINS) extraMins = computedWork - HALF_MINS;
+    else shortMins = HALF_MINS - computedWork;
+  } else if (computedWork < REQUIRED_MINS) {
+    status = "half";
+    shortMins = HALF_MINS - computedWork > 0 ? Math.max(0, HALF_MINS - computedWork) : 0;
+    // Between half target and full required: treat as full-day shortfall
+    status = "full";
+    shortMins = REQUIRED_MINS - computedWork;
   } else {
     status = "full";
+    extraMins = computedWork - REQUIRED_MINS;
   }
 
   // Rules 9 & 14: no short hours for OOUT days or MO days
