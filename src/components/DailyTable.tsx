@@ -72,7 +72,7 @@ export function DailyTable({ days }: { days: DayResult[] }) {
                 <TableCell className="font-mono text-xs">{d.lastOut ?? "—"}</TableCell>
                 <TableCell>{fmtHM(d.workedMins)}</TableCell>
                 <TableCell className="text-muted-foreground">{fmtHM(d.lunchMins)}</TableCell>
-                <TableCell>{statusBadge(d.status)}</TableCell>
+                <TableCell>{statusBadge(d)}</TableCell>
                 <TableCell className="space-x-1 text-xs">
                   {d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
                   {d.extraMins > 0 && <Badge variant="outline" className="border-blue-500 text-blue-600">+{fmtHM(d.extraMins)} extra</Badge>}
