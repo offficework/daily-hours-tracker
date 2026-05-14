@@ -67,28 +67,25 @@ export function computeDay(date: string, dayPunches: Punch[], isMo = false): Day
     };
   }
 
-  // Pair sequentially; LWRK pairs are lunch (deducted EXCEPT 12:00–12:30 portion which is protected per Rule 2).
+  // LWRK punches pair with the next LWRK punch (lunch out → lunch in).
+  // Everything else is work in/out. Deduct LWRK gap EXCEPT 12:00–12:30 portion (Rule 2).
   let lwrkDeduct = 0;
   let lwrkRawMins = 0;
   let lwrkProtected = 0;
   let hasLwrk = false;
-  let hasOout = false;
+  let hasOout = punches.some((p) => p.code === "OOUT");
 
-  for (let i = 0; i + 1 < punches.length; i += 2) {
-    const a = punches[i];
-    const b = punches[i + 1];
+  const lwrkIdx = punches.map((p, i) => (p.code === "LWRK" ? i : -1)).filter((i) => i >= 0);
+  for (let k = 0; k + 1 < lwrkIdx.length; k += 2) {
+    const a = punches[lwrkIdx[k]];
+    const b = punches[lwrkIdx[k + 1]];
     const dur = b.minutes - a.minutes;
     if (dur <= 0) continue;
-    const isLwrk = a.code === "LWRK" || b.code === "LWRK";
-    const isOoutPair = a.code === "OOUT" || b.code === "OOUT";
-    if (isOoutPair) hasOout = true;
-    if (isLwrk) {
-      hasLwrk = true;
-      lwrkRawMins += dur;
-      const prot = overlap(a.minutes, b.minutes, LUNCH_START, LUNCH_END);
-      lwrkProtected += prot;
-      lwrkDeduct += dur - prot; // 12:00–12:30 portion is NOT deducted
-    }
+    hasLwrk = true;
+    lwrkRawMins += dur;
+    const prot = overlap(a.minutes, b.minutes, LUNCH_START, LUNCH_END);
+    lwrkProtected += prot;
+    lwrkDeduct += dur - prot;
   }
 
   const codes = new Set(punches.map((p) => p.code));
