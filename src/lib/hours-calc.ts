@@ -3,11 +3,11 @@ import {
   type DayResult,
   type CycleSummary,
   REQUIRED_MINS,
+  HALF_MINS,
   MIN_HALF_MINS,
   LATE_CUTOFF_MINS,
   EARLY_CUTOFF_MINS,
   HALF_DAY_PUNCH_CUTOFF,
-  FULL_DAY_MIN_MINS,
 } from "./punch-types";
 
 export function fmtHM(mins: number): string {
