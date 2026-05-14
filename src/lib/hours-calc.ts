@@ -102,7 +102,7 @@ export function computeDay(date: string, dayPunches: Punch[]): DayResult {
     notes.push("< 2h — full day leave; hours = extra");
   } else if (firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF || computedWork < REQUIRED_MINS) {
     status = "half";
-    shortMins = Math.max(0, MIN_HALF_TARGET - computedWork);
+    shortMins = Math.max(0, HALF_MINS - computedWork);
   } else {
     status = "full";
     shortMins = 0;
