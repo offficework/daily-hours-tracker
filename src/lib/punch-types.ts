@@ -22,6 +22,8 @@ export interface DayResult {
   earlyOut: boolean;
   notes: string[];
   punches: Punch[];
+  isMo: boolean;
+  isOout: boolean;
 }
 
 export interface CycleSummary {
