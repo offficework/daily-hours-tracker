@@ -245,6 +245,10 @@ function Index() {
           </div>
         )}
       </main>
+
+      <footer className="border-t mt-8 py-4 text-center text-xs text-muted-foreground">
+        ⚠️ It can make mistakes, check at your own risk.
+      </footer>
     </div>
   );
 }
