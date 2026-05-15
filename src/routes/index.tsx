@@ -139,6 +139,63 @@ function Index() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CalendarDays className="h-4 w-4" /> Holidays (optional)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal")}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {holidayDates.length ? `${holidayDates.length} holiday${holidayDates.length === 1 ? "" : "s"} selected` : "Pick holiday dates"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="multiple"
+                    selected={holidayDates}
+                    onSelect={(dates) => setHolidayDates(dates ?? [])}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              {holidayDates.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setHolidayDates([])}>
+                  Clear all
+                </Button>
+              )}
+            </div>
+            {sortedHol.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {sortedHol.map((d) => {
+                  const iso = toIsoDate(d);
+                  return (
+                    <Badge key={iso} variant="secondary" className="gap-1 pr-1 border-amber-400">
+                      {format(d, "dd MMM yyyy")}
+                      <button
+                        type="button"
+                        onClick={() => removeHoliday(iso)}
+                        className="rounded hover:bg-muted-foreground/20 p-0.5"
+                        aria-label={`Remove ${iso}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Sundays and selected holidays count all worked hours as extra; no short hours or violations apply.
+            </p>
+          </CardContent>
+        </Card>
+
         {cycles.length > 0 && activeCycle && (
           <>
             <div className="flex flex-wrap items-center gap-3">
