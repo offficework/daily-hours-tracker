@@ -14,14 +14,17 @@ function parseDate(dmy: string): string {
 export function parsePunches(raw: string): Punch[] {
   const punches: Punch[] = [];
   const lines = raw.split(/\r?\n/);
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    // Skip header lines
-    if (/^Att/i.test(trimmed) || /^Codes/i.test(trimmed)) continue;
-    if (/^[A-Z]+->/i.test(trimmed)) continue;
-    // tokenize on whitespace
-    const tokens = trimmed.split(/\s+/);
+  for (const rawLine of lines) {
+    // Strip pipe table characters and collapse whitespace
+    const line = rawLine.replace(/\|/g, " ").trim();
+    if (!line) continue;
+    // Skip separator rows like "---------"
+    if (/^[-=_]+$/.test(line)) continue;
+    // Skip header / metadata lines
+    if (/^Staff\s*No/i.test(line)) continue;
+    if (/^Att/i.test(line) || /^Codes/i.test(line)) continue;
+    if (/^[A-Z]+->/i.test(line)) continue;
+    const tokens = line.split(/\s+/);
     if (tokens.length < 4) continue;
     const [dStr, tStr, clock, code] = tokens;
     if (!/^\d{2}\.\d{2}\.\d{4}$/.test(dStr)) continue;
