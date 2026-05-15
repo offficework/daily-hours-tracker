@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download } from "lucide-react";
-import type { DayResult } from "@/lib/punch-types";
+import type { DayResult, Punch } from "@/lib/punch-types";
 import { fmtHM } from "@/lib/hours-calc";
 
 function statusBadge(d: DayResult) {
@@ -15,16 +15,37 @@ function statusBadge(d: DayResult) {
   return <Badge variant="destructive">Absent</Badge>;
 }
 
+const CODE_CLASS: Record<string, string> = {
+  STD: "border-slate-400 text-slate-700 dark:text-slate-300",
+  LWRK: "border-violet-500 text-violet-600",
+  OOUT: "border-blue-500 text-blue-600",
+  POUT: "border-amber-500 text-amber-600",
+  REG: "border-emerald-500 text-emerald-600",
+  NGHT: "border-indigo-500 text-indigo-600",
+  LLCH: "border-orange-500 text-orange-600",
+  CANT: "border-teal-500 text-teal-600",
+  DEL: "border-red-500 text-red-600",
+};
+
+function PunchChip({ p }: { p: Punch }) {
+  const cls = CODE_CLASS[p.code] ?? "border-muted-foreground/40 text-muted-foreground";
+  return (
+    <Badge variant="outline" className={`mr-1 mb-1 font-mono text-[10px] ${cls}`}>
+      {p.time} <span className="ml-1 font-semibold">{p.code}</span>
+    </Badge>
+  );
+}
+
 export function DailyTable({ days }: { days: DayResult[] }) {
   const exportCsv = () => {
     const rows = [
-      ["Date", "First In", "Last Out", "Worked", "Lunch", "Status", "Short", "Extra", "Late", "Early Out", "Notes"],
+      ["Date", "First In", "Last Out", "Punches", "Worked", "Status", "Short", "Extra", "Late", "Early Out", "Notes"],
       ...days.map((d) => [
         d.date,
         d.firstIn ?? "",
         d.lastOut ?? "",
+        d.punches.map((p) => `${p.time}/${p.code}`).join("; "),
         fmtHM(d.workedMins),
-        fmtHM(d.lunchMins),
         d.status,
         d.shortMins ? fmtHM(d.shortMins) : "",
         d.extraMins ? fmtHM(d.extraMins) : "",
@@ -57,9 +78,9 @@ export function DailyTable({ days }: { days: DayResult[] }) {
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>In</TableHead>
+              <TableHead>Punches</TableHead>
               <TableHead>Out</TableHead>
               <TableHead>Worked</TableHead>
-              <TableHead>Lunch</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Short / Extra</TableHead>
               <TableHead>Violations</TableHead>
@@ -71,9 +92,17 @@ export function DailyTable({ days }: { days: DayResult[] }) {
               <TableRow key={d.date}>
                 <TableCell className="font-mono text-xs">{d.date}</TableCell>
                 <TableCell className="font-mono text-xs">{d.firstIn ?? "—"}</TableCell>
+                <TableCell className="min-w-[220px]">
+                  <div className="flex flex-wrap">
+                    {d.punches.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    ) : (
+                      d.punches.map((p, i) => <PunchChip key={i} p={p} />)
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell className="font-mono text-xs">{d.lastOut ?? "—"}</TableCell>
                 <TableCell>{fmtHM(d.workedMins)}</TableCell>
-                <TableCell className="text-muted-foreground">{fmtHM(d.lunchMins)}</TableCell>
                 <TableCell>{statusBadge(d)}</TableCell>
                 <TableCell className="space-x-1 text-xs">
                   {d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
