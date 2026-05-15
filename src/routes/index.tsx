@@ -37,17 +37,20 @@ function Index() {
   const [raw, setRaw] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [moDates, setMoDates] = useState<Date[]>([]);
+  const [holidayDates, setHolidayDates] = useState<Date[]>([]);
   const [selectedCycle, setSelectedCycle] = useState<string>("");
 
   const moKey = useMemo(() => moDates.map(toIsoDate).sort().join(","), [moDates]);
+  const holKey = useMemo(() => holidayDates.map(toIsoDate).sort().join(","), [holidayDates]);
 
   const cycles = useMemo(() => {
     if (!submitted.trim()) return [];
     const moSet = new Set(moDates.map(toIsoDate));
-    const days = computeAllDays(parsePunches(submitted), moSet);
+    const holSet = new Set(holidayDates.map(toIsoDate));
+    const days = computeAllDays(parsePunches(submitted), moSet, holSet);
     return groupByCycle(days);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitted, moKey]);
+  }, [submitted, moKey, holKey]);
 
   const activeCycle = useMemo(() => {
     if (!cycles.length) return null;
@@ -58,8 +61,11 @@ function Index() {
 
   const removeMo = (iso: string) =>
     setMoDates((prev) => prev.filter((d) => toIsoDate(d) !== iso));
+  const removeHoliday = (iso: string) =>
+    setHolidayDates((prev) => prev.filter((d) => toIsoDate(d) !== iso));
 
   const sortedMo = [...moDates].sort((a, b) => a.getTime() - b.getTime());
+  const sortedHol = [...holidayDates].sort((a, b) => a.getTime() - b.getTime());
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,6 +139,63 @@ function Index() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CalendarDays className="h-4 w-4" /> Holidays (optional)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal")}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {holidayDates.length ? `${holidayDates.length} holiday${holidayDates.length === 1 ? "" : "s"} selected` : "Pick holiday dates"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="multiple"
+                    selected={holidayDates}
+                    onSelect={(dates) => setHolidayDates(dates ?? [])}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              {holidayDates.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setHolidayDates([])}>
+                  Clear all
+                </Button>
+              )}
+            </div>
+            {sortedHol.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {sortedHol.map((d) => {
+                  const iso = toIsoDate(d);
+                  return (
+                    <Badge key={iso} variant="secondary" className="gap-1 pr-1 border-amber-400">
+                      {format(d, "dd MMM yyyy")}
+                      <button
+                        type="button"
+                        onClick={() => removeHoliday(iso)}
+                        className="rounded hover:bg-muted-foreground/20 p-0.5"
+                        aria-label={`Remove ${iso}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Sundays and selected holidays count all worked hours as extra; no short hours or violations apply.
+            </p>
+          </CardContent>
+        </Card>
+
         {cycles.length > 0 && activeCycle && (
           <>
             <div className="flex flex-wrap items-center gap-3">
@@ -182,6 +245,10 @@ function Index() {
           </div>
         )}
       </main>
+
+      <footer className="border-t mt-8 py-4 text-center text-xs text-muted-foreground">
+        ⚠️ It can make mistakes, check at your own risk.
+      </footer>
     </div>
   );
 }

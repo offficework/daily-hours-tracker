@@ -24,6 +24,8 @@ export interface DayResult {
   punches: Punch[];
   isMo: boolean;
   isOout: boolean;
+  isHoliday: boolean;
+  isSunday: boolean;
 }
 
 export interface CycleSummary {
