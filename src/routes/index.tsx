@@ -37,17 +37,20 @@ function Index() {
   const [raw, setRaw] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [moDates, setMoDates] = useState<Date[]>([]);
+  const [holidayDates, setHolidayDates] = useState<Date[]>([]);
   const [selectedCycle, setSelectedCycle] = useState<string>("");
 
   const moKey = useMemo(() => moDates.map(toIsoDate).sort().join(","), [moDates]);
+  const holKey = useMemo(() => holidayDates.map(toIsoDate).sort().join(","), [holidayDates]);
 
   const cycles = useMemo(() => {
     if (!submitted.trim()) return [];
     const moSet = new Set(moDates.map(toIsoDate));
-    const days = computeAllDays(parsePunches(submitted), moSet);
+    const holSet = new Set(holidayDates.map(toIsoDate));
+    const days = computeAllDays(parsePunches(submitted), moSet, holSet);
     return groupByCycle(days);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitted, moKey]);
+  }, [submitted, moKey, holKey]);
 
   const activeCycle = useMemo(() => {
     if (!cycles.length) return null;
@@ -58,8 +61,11 @@ function Index() {
 
   const removeMo = (iso: string) =>
     setMoDates((prev) => prev.filter((d) => toIsoDate(d) !== iso));
+  const removeHoliday = (iso: string) =>
+    setHolidayDates((prev) => prev.filter((d) => toIsoDate(d) !== iso));
 
   const sortedMo = [...moDates].sort((a, b) => a.getTime() - b.getTime());
+  const sortedHol = [...holidayDates].sort((a, b) => a.getTime() - b.getTime());
 
   return (
     <div className="min-h-screen bg-background">
