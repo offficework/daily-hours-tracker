@@ -8,6 +8,8 @@ import { fmtHM } from "@/lib/hours-calc";
 
 function statusBadge(d: DayResult) {
   if (d.isMo) return <Badge className="bg-indigo-600 hover:bg-indigo-600">MO</Badge>;
+  if (d.isHoliday) return <Badge className="bg-amber-600 hover:bg-amber-600">Holiday</Badge>;
+  if (d.isSunday) return <Badge className="bg-sky-600 hover:bg-sky-600">Sunday</Badge>;
   if (d.status === "full") return <Badge className="bg-emerald-600 hover:bg-emerald-600">Full</Badge>;
   if (d.status === "half") return <Badge className="bg-amber-500 hover:bg-amber-500">Half</Badge>;
   return <Badge variant="destructive">Absent</Badge>;
