@@ -14,7 +14,7 @@ export interface DayResult {
   lastOut: string | null;
   workedMins: number;
   lunchMins: number;
-  status: "full" | "half" | "absent";
+  status: "full" | "half" | "absent" | "error";
   shortMins: number; // shortfall from required (full or half target)
   extraMins: number; // worked minutes counted as extra (when < 2h, full leave deducted)
   fullDayLeave: boolean; // true when < 2h ⇒ 1 full day leave deducted
@@ -26,6 +26,15 @@ export interface DayResult {
   isOout: boolean;
   isHoliday: boolean;
   isSunday: boolean;
+  hasError: boolean; // odd number of punches
+}
+
+// Required daily minutes depend on month:
+//   April – December: 8h 40m (520)
+//   January – March:  8h 18m (498)
+export function requiredMinsForDate(date: string): number {
+  const m = Number(date.split("-")[1]);
+  return m >= 1 && m <= 3 ? 8 * 60 + 18 : 8 * 60 + 40;
 }
 
 export interface CycleSummary {

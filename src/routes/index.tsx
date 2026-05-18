@@ -74,7 +74,7 @@ function Index() {
           <Clock className="h-6 w-6 text-primary" />
           <div>
             <h1 className="text-xl font-semibold">Employee Hours Calculator</h1>
-            <p className="text-xs text-muted-foreground">Cycle: 23rd → 22nd · Required 8h 40m · Runs fully offline</p>
+            <p className="text-xs text-muted-foreground">Cycle: 23rd → 22nd · 8h 40m (Apr–Dec) / 8h 18m (Jan–Mar)</p>
           </div>
         </div>
       </header>

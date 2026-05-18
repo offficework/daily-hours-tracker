@@ -7,6 +7,7 @@ import type { DayResult, Punch } from "@/lib/punch-types";
 import { fmtHM } from "@/lib/hours-calc";
 
 function statusBadge(d: DayResult) {
+  if (d.hasError) return <Badge variant="destructive">Error</Badge>;
   if (d.isMo) return <Badge className="bg-indigo-600 hover:bg-indigo-600">MO</Badge>;
   if (d.isHoliday) return <Badge className="bg-amber-600 hover:bg-amber-600">Holiday</Badge>;
   if (d.isSunday) return <Badge className="bg-sky-600 hover:bg-sky-600">Sunday</Badge>;
@@ -39,16 +40,13 @@ function PunchChip({ p }: { p: Punch }) {
 export function DailyTable({ days }: { days: DayResult[] }) {
   const exportCsv = () => {
     const rows = [
-      ["Date", "First In", "Last Out", "Punches", "Worked", "Status", "Short", "Extra", "Late", "Early Out", "Notes"],
+      ["Date", "Punches", "Worked", "Status", "Short/Extra", "Late", "Early Out", "Notes"],
       ...days.map((d) => [
         d.date,
-        d.firstIn ?? "",
-        d.lastOut ?? "",
         d.punches.map((p) => `${p.time}/${p.code}`).join("; "),
-        fmtHM(d.workedMins),
-        d.status,
-        d.shortMins ? fmtHM(d.shortMins) : "",
-        d.extraMins ? fmtHM(d.extraMins) : "",
+        d.hasError ? "" : fmtHM(d.workedMins),
+        d.hasError ? "error" : d.status,
+        d.hasError ? "" : d.shortMins ? `-${fmtHM(d.shortMins)}` : d.extraMins ? `+${fmtHM(d.extraMins)}` : "",
         d.late ? "Y" : "",
         d.earlyOut ? "Y" : "",
         d.notes.join("; "),
@@ -77,9 +75,7 @@ export function DailyTable({ days }: { days: DayResult[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
-              <TableHead>In</TableHead>
               <TableHead>Punches</TableHead>
-              <TableHead>Out</TableHead>
               <TableHead>Worked</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Short / Extra</TableHead>
@@ -89,9 +85,8 @@ export function DailyTable({ days }: { days: DayResult[] }) {
           </TableHeader>
           <TableBody>
             {days.map((d) => (
-              <TableRow key={d.date}>
+              <TableRow key={d.date} className={d.hasError ? "bg-red-50/40" : undefined}>
                 <TableCell className="font-mono text-xs">{d.date}</TableCell>
-                <TableCell className="font-mono text-xs">{d.firstIn ?? "—"}</TableCell>
                 <TableCell className="min-w-[220px]">
                   <div className="flex flex-wrap">
                     {d.punches.length === 0 ? (
@@ -101,12 +96,11 @@ export function DailyTable({ days }: { days: DayResult[] }) {
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="font-mono text-xs">{d.lastOut ?? "—"}</TableCell>
-                <TableCell>{fmtHM(d.workedMins)}</TableCell>
+                <TableCell>{d.hasError ? <span className="text-xs text-red-600">—</span> : fmtHM(d.workedMins)}</TableCell>
                 <TableCell>{statusBadge(d)}</TableCell>
                 <TableCell className="space-x-1 text-xs">
-                  {d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
-                  {d.extraMins > 0 && <Badge variant="outline" className="border-blue-500 text-blue-600">+{fmtHM(d.extraMins)} extra</Badge>}
+                  {!d.hasError && d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
+                  {!d.hasError && d.extraMins > 0 && <Badge variant="outline" className="border-blue-500 text-blue-600">+{fmtHM(d.extraMins)}</Badge>}
                   {d.fullDayLeave && <Badge variant="destructive">1d leave</Badge>}
                 </TableCell>
                 <TableCell className="space-x-1">
