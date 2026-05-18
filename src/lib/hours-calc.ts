@@ -277,9 +277,21 @@ export function groupByCycle(days: DayResult[]): CycleSummary[] {
     }
   }
   for (const s of map.values()) {
-    s.violationLeave = s.violations > 3 ? 0.5 : 0;
+    s.violationLeave = Math.max(0, s.violations - 3) * 0.5;
     s.leaveDeducted = s.fullDayLeaves + s.violationLeave;
     s.days.sort((a, b) => a.date.localeCompare(b.date));
+    // Annotate each violation beyond the 3rd with a note on the day it occurred.
+    let vCount = 0;
+    for (const day of s.days) {
+      if (day.hasError || day.isMo || day.isHoliday || day.isSunday) continue;
+      const dayViolations = (day.late ? 1 : 0) + (day.earlyOut ? 1 : 0);
+      for (let i = 0; i < dayViolations; i++) {
+        vCount += 1;
+        if (vCount > 3) {
+          day.notes.push(`+0.5 day leave deducted (violation #${vCount})`);
+        }
+      }
+    }
   }
   return [...map.values()].sort((a, b) => a.start.localeCompare(b.start));
 }
