@@ -184,6 +184,11 @@ export function computeDay(
 
   if (hasOout || isMo || isRest) shortMins = 0;
 
+  // Late violation only when: (a) full day completed but arrived 10:01–10:59, or (b) arrived ≥ 13:30 (half day).
+  const late = isMo || isRest
+    ? false
+    : (status === "full" && lateFullDayArrival) || lateHalfDay;
+
   return {
     date,
     firstIn: firstIn.time,
