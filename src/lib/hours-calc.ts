@@ -8,10 +8,12 @@ import {
   LATE_CUTOFF_MINS,
   EARLY_CUTOFF_MINS,
   HALF_DAY_PUNCH_CUTOFF,
+  requiredMinsForDate,
 } from "./punch-types";
 
 const LUNCH_START = 12 * 60; // 720
 const LUNCH_END = 12 * 60 + 30; // 750
+const HALF_DAY_VIOLATION_CUTOFF = 13 * 60 + 30; // 810 — punch >= 13:30 ⇒ half day + violation
 
 export function fmtHM(mins: number): string {
   if (!isFinite(mins) || mins <= 0) return "0h 00m";
@@ -25,9 +27,32 @@ function overlap(a1: number, a2: number, b1: number, b2: number) {
 }
 
 function isSundayDate(date: string): boolean {
-  // date is yyyy-mm-dd; construct as UTC to avoid TZ shift
   const [y, m, d] = date.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay() === 0;
+}
+
+function emptyDay(date: string, extra: Partial<DayResult>): DayResult {
+  return {
+    date,
+    firstIn: null,
+    lastOut: null,
+    workedMins: 0,
+    lunchMins: 0,
+    status: "absent",
+    shortMins: 0,
+    extraMins: 0,
+    fullDayLeave: false,
+    late: false,
+    earlyOut: false,
+    notes: [],
+    punches: [],
+    isMo: false,
+    isOout: false,
+    isHoliday: false,
+    isSunday: false,
+    hasError: false,
+    ...extra,
+  };
 }
 
 export function computeDay(
@@ -39,37 +64,39 @@ export function computeDay(
   const punches = [...dayPunches].sort((a, b) => a.minutes - b.minutes);
   const notes: string[] = [];
   const isSunday = isSundayDate(date);
-  const isRest = isHoliday || isSunday; // Holidays + Sundays => any work counts as extra
+  const isRest = isHoliday || isSunday;
+  const REQ = requiredMinsForDate(date);
 
   if (punches.length === 0) {
     if (isMo) {
-      return {
-        date, firstIn: null, lastOut: null,
-        workedMins: REQUIRED_MINS, lunchMins: 0,
-        status: "full", shortMins: 0, extraMins: 0,
-        fullDayLeave: false, late: false, earlyOut: false,
-        notes: ["MO (no short hours)"], punches,
-        isMo: true, isOout: false, isHoliday, isSunday,
-      };
+      return emptyDay(date, {
+        workedMins: REQ, status: "full", notes: ["MO (no short hours)"],
+        isMo: true, isHoliday, isSunday,
+      });
     }
     if (isRest) {
-      return {
-        date, firstIn: null, lastOut: null,
-        workedMins: 0, lunchMins: 0,
-        status: "full", shortMins: 0, extraMins: 0,
-        fullDayLeave: false, late: false, earlyOut: false,
-        notes: [isHoliday ? "Holiday" : "Sunday"], punches,
-        isMo: false, isOout: false, isHoliday, isSunday,
-      };
+      return emptyDay(date, {
+        status: "full", notes: [isHoliday ? "Holiday" : "Sunday"],
+        isHoliday, isSunday,
+      });
     }
-    return {
-      date, firstIn: null, lastOut: null,
-      workedMins: 0, lunchMins: 0,
-      status: "absent", shortMins: 0, extraMins: 0,
-      fullDayLeave: true, late: false, earlyOut: false,
-      notes: ["No punches"], punches,
-      isMo: false, isOout: false, isHoliday, isSunday,
-    };
+    return emptyDay(date, {
+      status: "absent", fullDayLeave: true, notes: ["No punches"],
+      isHoliday, isSunday,
+    });
+  }
+
+  // Rule 15: odd punches → error, no calculation
+  if (punches.length % 2 !== 0) {
+    return emptyDay(date, {
+      firstIn: punches[0].time,
+      lastOut: punches[punches.length - 1].time,
+      status: "error",
+      notes: [`Odd punches (${punches.length}) — cannot calculate`],
+      punches,
+      isMo, isHoliday, isSunday,
+      hasError: true,
+    });
   }
 
   let lwrkDeduct = 0;
@@ -114,8 +141,8 @@ export function computeDay(
   if (isHoliday) notes.push("Holiday — all hours extra");
   else if (isSunday) notes.push("Sunday — all hours extra");
 
-  // No violations on rest days / MO
-  const late = isMo || isRest ? false : firstIn.minutes > LATE_CUTOFF_MINS;
+  const lateHalfDay = firstIn.minutes >= HALF_DAY_VIOLATION_CUTOFF; // ≥ 13:30 ⇒ half + violation
+  const late = isMo || isRest ? false : (firstIn.minutes > LATE_CUTOFF_MINS || lateHalfDay);
   const earlyOut = isMo || isRest ? false : lastOut.minutes < EARLY_CUTOFF_MINS;
 
   let status: DayResult["status"];
@@ -124,7 +151,6 @@ export function computeDay(
   let fullDayLeave = false;
 
   if (isRest) {
-    // Holiday or Sunday: every minute worked is extra, no short
     status = "full";
     extraMins = Math.round(computedWork);
   } else if (isMo) {
@@ -134,16 +160,21 @@ export function computeDay(
     fullDayLeave = true;
     extraMins = Math.round(computedWork);
     notes.push("< 2h — full day leave; hours = extra");
-  } else if (firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF || computedWork < 5 * 60) {
+  } else if (
+    firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF ||
+    lateHalfDay ||
+    computedWork < 5 * 60
+  ) {
     status = "half";
+    if (lateHalfDay) notes.push("Punched ≥ 13:30 — half day + violation");
     if (computedWork >= HALF_MINS) extraMins = computedWork - HALF_MINS;
     else shortMins = HALF_MINS - computedWork;
-  } else if (computedWork < REQUIRED_MINS) {
+  } else if (computedWork < REQ) {
     status = "full";
-    shortMins = REQUIRED_MINS - computedWork;
+    shortMins = REQ - computedWork;
   } else {
     status = "full";
-    extraMins = computedWork - REQUIRED_MINS;
+    extraMins = computedWork - REQ;
   }
 
   shortMins = Math.round(shortMins);
@@ -169,6 +200,7 @@ export function computeDay(
     isOout: hasOout,
     isHoliday,
     isSunday,
+    hasError: false,
   };
 }
 
@@ -182,12 +214,8 @@ export function computeAllDays(
     if (!byDate.has(p.date)) byDate.set(p.date, []);
     byDate.get(p.date)!.push(p);
   }
-  for (const d of moDates) {
-    if (!byDate.has(d)) byDate.set(d, []);
-  }
-  for (const d of holidayDates) {
-    if (!byDate.has(d)) byDate.set(d, []);
-  }
+  for (const d of moDates) if (!byDate.has(d)) byDate.set(d, []);
+  for (const d of holidayDates) if (!byDate.has(d)) byDate.set(d, []);
   const dates = [...byDate.keys()].sort();
   return dates.map((d) =>
     computeDay(d, byDate.get(d)!, moDates.has(d), holidayDates.has(d)),
@@ -201,17 +229,11 @@ export function cycleForDate(dateStr: string): { start: string; end: string; lab
   let startM = m;
   if (d < 23) {
     startM -= 1;
-    if (startM < 1) {
-      startM = 12;
-      startY -= 1;
-    }
+    if (startM < 1) { startM = 12; startY -= 1; }
   }
   let endY = startY;
   let endM = startM + 1;
-  if (endM > 12) {
-    endM = 1;
-    endY += 1;
-  }
+  if (endM > 12) { endM = 1; endY += 1; }
   const start = `${startY}-${String(startM).padStart(2, "0")}-23`;
   const end = `${endY}-${String(endM).padStart(2, "0")}-22`;
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -226,58 +248,47 @@ export function groupByCycle(days: DayResult[]): CycleSummary[] {
     const key = c.start;
     if (!map.has(key)) {
       map.set(key, {
-        label: c.label,
-        start: c.start,
-        end: c.end,
-        days: [],
-        fullDays: 0,
-        halfDays: 0,
-        absents: 0,
-        totalMins: 0,
-        totalShortMins: 0,
-        totalExtraMins: 0,
-        violations: 0,
-        leaveDeducted: 0,
-        fullDayLeaves: 0,
-        violationLeave: 0,
+        label: c.label, start: c.start, end: c.end, days: [],
+        fullDays: 0, halfDays: 0, absents: 0,
+        totalMins: 0, totalShortMins: 0, totalExtraMins: 0,
+        violations: 0, leaveDeducted: 0, fullDayLeaves: 0, violationLeave: 0,
       });
     }
     const summary = map.get(key)!;
     summary.days.push(day);
+    if (day.hasError) continue; // skip totals for error days
     summary.totalMins += day.workedMins;
     summary.totalShortMins += day.shortMins;
     summary.totalExtraMins += day.extraMins;
     if (day.fullDayLeave) summary.fullDayLeaves += 1;
     if (day.status === "full") summary.fullDays += 1;
     else if (day.status === "half") summary.halfDays += 1;
-    else summary.absents += 1;
+    else if (day.status === "absent") summary.absents += 1;
     if (!day.isMo && !day.isHoliday && !day.isSunday) {
       if (day.late) summary.violations += 1;
       if (day.earlyOut) summary.violations += 1;
     }
   }
   for (const s of map.values()) {
-    s.violationLeave = s.violations > 3 ? 0.5 : 0; // Rule 10
+    s.violationLeave = s.violations > 3 ? 0.5 : 0;
     s.leaveDeducted = s.fullDayLeaves + s.violationLeave;
     s.days.sort((a, b) => a.date.localeCompare(b.date));
   }
   return [...map.values()].sort((a, b) => a.start.localeCompare(b.start));
 }
 
-// Helpers for MO date input
 export function parseMoDates(raw: string): Set<string> {
   const out = new Set<string>();
   if (!raw.trim()) return out;
   const tokens = raw.split(/[\s,;]+/).filter(Boolean);
   for (const t of tokens) {
-    // dd.mm.yyyy or dd/mm/yyyy or yyyy-mm-dd
     let m = /^(\d{2})[./-](\d{2})[./-](\d{4})$/.exec(t);
-    if (m) {
-      out.add(`${m[3]}-${m[2]}-${m[1]}`);
-      continue;
-    }
+    if (m) { out.add(`${m[3]}-${m[2]}-${m[1]}`); continue; }
     m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
     if (m) out.add(t);
   }
   return out;
 }
+
+// Re-export for callers that imported from this module historically
+export { REQUIRED_MINS, HALF_MINS, MIN_HALF_MINS, LATE_CUTOFF_MINS, EARLY_CUTOFF_MINS, HALF_DAY_PUNCH_CUTOFF };
