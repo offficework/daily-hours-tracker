@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import type { CycleSummary } from "@/lib/punch-types";
-import { REQUIRED_MINS } from "@/lib/punch-types";
+import { requiredMinsForDate } from "@/lib/punch-types";
 
 const STATUS_COLORS = { full: "#10b981", half: "#f59e0b", absent: "#ef4444" };
 
