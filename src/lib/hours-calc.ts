@@ -142,10 +142,9 @@ export function computeDay(
   else if (isSunday) notes.push("Sunday — all hours extra");
 
   const lateHalfDay = firstIn.minutes >= HALF_DAY_VIOLATION_CUTOFF; // ≥ 13:30 ⇒ half + violation
-  // Late violation: arrived 10:01:00–10:59:59 (still a full-day attempt). 11:00+ is just half day (no violation).
-  const lateFullDay =
+  // Late "full-day attempt" — arrived 10:01:00–10:59:59. Only counts as violation if they actually completed a full day.
+  const lateFullDayArrival =
     firstIn.minutes >= LATE_CUTOFF_MINS && firstIn.minutes < HALF_DAY_PUNCH_CUTOFF;
-  const late = isMo || isRest ? false : (lateFullDay || lateHalfDay);
   const earlyOut = isMo || isRest ? false : lastOut.minutes < EARLY_CUTOFF_MINS;
 
   let status: DayResult["status"];
