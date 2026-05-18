@@ -7,6 +7,7 @@ import type { DayResult, Punch } from "@/lib/punch-types";
 import { fmtHM } from "@/lib/hours-calc";
 
 function statusBadge(d: DayResult) {
+  if (d.hasError) return <Badge variant="destructive">Error</Badge>;
   if (d.isMo) return <Badge className="bg-indigo-600 hover:bg-indigo-600">MO</Badge>;
   if (d.isHoliday) return <Badge className="bg-amber-600 hover:bg-amber-600">Holiday</Badge>;
   if (d.isSunday) return <Badge className="bg-sky-600 hover:bg-sky-600">Sunday</Badge>;
