@@ -75,9 +75,7 @@ export function DailyTable({ days }: { days: DayResult[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
-              <TableHead>In</TableHead>
               <TableHead>Punches</TableHead>
-              <TableHead>Out</TableHead>
               <TableHead>Worked</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Short / Extra</TableHead>
@@ -87,9 +85,8 @@ export function DailyTable({ days }: { days: DayResult[] }) {
           </TableHeader>
           <TableBody>
             {days.map((d) => (
-              <TableRow key={d.date}>
+              <TableRow key={d.date} className={d.hasError ? "bg-red-50/40" : undefined}>
                 <TableCell className="font-mono text-xs">{d.date}</TableCell>
-                <TableCell className="font-mono text-xs">{d.firstIn ?? "—"}</TableCell>
                 <TableCell className="min-w-[220px]">
                   <div className="flex flex-wrap">
                     {d.punches.length === 0 ? (
@@ -99,12 +96,11 @@ export function DailyTable({ days }: { days: DayResult[] }) {
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="font-mono text-xs">{d.lastOut ?? "—"}</TableCell>
-                <TableCell>{fmtHM(d.workedMins)}</TableCell>
+                <TableCell>{d.hasError ? <span className="text-xs text-red-600">—</span> : fmtHM(d.workedMins)}</TableCell>
                 <TableCell>{statusBadge(d)}</TableCell>
                 <TableCell className="space-x-1 text-xs">
-                  {d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
-                  {d.extraMins > 0 && <Badge variant="outline" className="border-blue-500 text-blue-600">+{fmtHM(d.extraMins)} extra</Badge>}
+                  {!d.hasError && d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
+                  {!d.hasError && d.extraMins > 0 && <Badge variant="outline" className="border-blue-500 text-blue-600">+{fmtHM(d.extraMins)}</Badge>}
                   {d.fullDayLeave && <Badge variant="destructive">1d leave</Badge>}
                 </TableCell>
                 <TableCell className="space-x-1">
