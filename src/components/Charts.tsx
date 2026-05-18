@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import type { CycleSummary } from "@/lib/punch-types";
-import { REQUIRED_MINS } from "@/lib/punch-types";
+import { requiredMinsForDate } from "@/lib/punch-types";
 
 const STATUS_COLORS = { full: "#10b981", half: "#f59e0b", absent: "#ef4444" };
 
@@ -12,6 +12,7 @@ export function Charts({ cycle }: { cycle: CycleSummary }) {
   const daily = cycle.days.map((d) => ({
     date: d.date.slice(5),
     hours: +(d.workedMins / 60).toFixed(2),
+    required: +(requiredMinsForDate(d.date) / 60).toFixed(2),
     late: d.late ? 1 : 0,
     early: d.earlyOut ? 1 : 0,
   }));
@@ -28,12 +29,10 @@ export function Charts({ cycle }: { cycle: CycleSummary }) {
     { name: "Absent", value: cycle.absents, color: STATUS_COLORS.absent },
   ].filter((d) => d.value > 0);
 
-  const reqHrs = +(REQUIRED_MINS / 60).toFixed(2);
-
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
-        <CardHeader><CardTitle>Daily Hours vs Required (8h 40m)</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Daily Hours vs Required</CardTitle></CardHeader>
         <CardContent style={{ height: 280 }}>
           <ResponsiveContainer>
             <ComposedChart data={daily}>
@@ -43,10 +42,10 @@ export function Charts({ cycle }: { cycle: CycleSummary }) {
               <Tooltip />
               <Bar dataKey="hours" name="Hours">
                 {daily.map((d, i) => (
-                  <Cell key={i} fill={d.hours >= reqHrs ? STATUS_COLORS.full : d.hours >= 2 ? STATUS_COLORS.half : STATUS_COLORS.absent} />
+                  <Cell key={i} fill={d.hours >= d.required ? STATUS_COLORS.full : d.hours >= 2 ? STATUS_COLORS.half : STATUS_COLORS.absent} />
                 ))}
               </Bar>
-              <Line type="monotone" dataKey={() => reqHrs} stroke="#1f2937" dot={false} name="Required" strokeDasharray="4 4" />
+              <Line type="monotone" dataKey="required" stroke="#1f2937" dot={false} name="Required" strokeDasharray="4 4" />
             </ComposedChart>
           </ResponsiveContainer>
         </CardContent>
