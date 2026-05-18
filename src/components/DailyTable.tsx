@@ -40,16 +40,13 @@ function PunchChip({ p }: { p: Punch }) {
 export function DailyTable({ days }: { days: DayResult[] }) {
   const exportCsv = () => {
     const rows = [
-      ["Date", "First In", "Last Out", "Punches", "Worked", "Status", "Short", "Extra", "Late", "Early Out", "Notes"],
+      ["Date", "Punches", "Worked", "Status", "Short/Extra", "Late", "Early Out", "Notes"],
       ...days.map((d) => [
         d.date,
-        d.firstIn ?? "",
-        d.lastOut ?? "",
         d.punches.map((p) => `${p.time}/${p.code}`).join("; "),
-        fmtHM(d.workedMins),
-        d.status,
-        d.shortMins ? fmtHM(d.shortMins) : "",
-        d.extraMins ? fmtHM(d.extraMins) : "",
+        d.hasError ? "" : fmtHM(d.workedMins),
+        d.hasError ? "error" : d.status,
+        d.hasError ? "" : d.shortMins ? `-${fmtHM(d.shortMins)}` : d.extraMins ? `+${fmtHM(d.extraMins)}` : "",
         d.late ? "Y" : "",
         d.earlyOut ? "Y" : "",
         d.notes.join("; "),
