@@ -213,28 +213,37 @@ function Index() {
                   ))}
                 </SelectContent>
               </Select>
-              {(() => {
-                const totExtra = cycles.reduce((s, c) => s + c.totalExtraMins, 0);
-                const totShort = cycles.reduce((s, c) => s + c.totalShortMins, 0);
-                const totWorked = cycles.reduce((s, c) => s + c.totalMins, 0);
-                const net = totExtra - totShort;
-                const fmt = (m: number) => {
-                  const h = Math.floor(Math.abs(m) / 60);
-                  const mm = Math.round(Math.abs(m) % 60);
-                  return `${m < 0 ? "-" : ""}${h}h ${String(mm).padStart(2, "0")}m`;
-                };
-                return (
-                  <div className="ml-auto flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-md border px-2 py-1">Overall worked: <b>{fmt(totWorked)}</b></span>
-                    <span className="rounded-md border px-2 py-1">Overall extra: <b className="text-emerald-700">{fmt(totExtra)}</b></span>
-                    <span className="rounded-md border px-2 py-1">Overall short: <b className="text-red-700">{fmt(totShort)}</b></span>
-                    <span className={`rounded-md border px-2 py-1 ${net >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
-                      Overall net: <b>{net >= 0 ? "+" : ""}{fmt(net)}</b>
-                    </span>
-                  </div>
-                );
-              })()}
             </div>
+
+            {(() => {
+              const totExtra = cycles.reduce((s, c) => s + c.totalExtraMins, 0);
+              const totShort = cycles.reduce((s, c) => s + c.totalShortMins, 0);
+              const totWorked = cycles.reduce((s, c) => s + c.totalMins, 0);
+              const net = totExtra - totShort;
+              const fmt = (m: number) => {
+                const h = Math.floor(Math.abs(m) / 60);
+                const mm = Math.round(Math.abs(m) % 60);
+                return `${m < 0 ? "-" : ""}${h}h ${String(mm).padStart(2, "0")}m`;
+              };
+              const Tile = ({ label, value, className }: { label: string; value: string; className?: string }) => (
+                <div className="rounded-lg border bg-card p-4 shadow-sm">
+                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+                  <div className={`mt-1 text-2xl font-semibold ${className ?? ""}`}>{value}</div>
+                </div>
+              );
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Tile label="Overall worked" value={fmt(totWorked)} />
+                  <Tile label="Overall extra" value={fmt(totExtra)} className="text-emerald-700" />
+                  <Tile label="Overall short" value={fmt(totShort)} className="text-red-700" />
+                  <Tile
+                    label="Overall net"
+                    value={`${net >= 0 ? "+" : ""}${fmt(net)}`}
+                    className={net >= 0 ? "text-emerald-700" : "text-red-700"}
+                  />
+                </div>
+              );
+            })()}
 
             <MonthlySummary cycle={activeCycle} />
             <Charts cycle={activeCycle} />
