@@ -82,119 +82,122 @@ function Index() {
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         <PunchInput value={raw} onChange={setRaw} onCalculate={handleCalc} />
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarDays className="h-4 w-4" /> MO Dates (optional)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal")}>
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {moDates.length ? `${moDates.length} MO date${moDates.length === 1 ? "" : "s"} selected` : "Pick MO dates"}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarDays className="h-4 w-4" /> MO Dates (optional)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal")}>
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {moDates.length ? `${moDates.length} MO date${moDates.length === 1 ? "" : "s"} selected` : "Pick MO dates"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="multiple"
+                      selected={moDates}
+                      onSelect={(dates) => setMoDates(dates ?? [])}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {moDates.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={() => setMoDates([])}>
+                    Clear all
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="multiple"
-                    selected={moDates}
-                    onSelect={(dates) => setMoDates(dates ?? [])}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              {moDates.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => setMoDates([])}>
-                  Clear all
-                </Button>
-              )}
-            </div>
-            {sortedMo.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {sortedMo.map((d) => {
-                  const iso = toIsoDate(d);
-                  return (
-                    <Badge key={iso} variant="secondary" className="gap-1 pr-1">
-                      {format(d, "dd MMM yyyy")}
-                      <button
-                        type="button"
-                        onClick={() => removeMo(iso)}
-                        className="rounded hover:bg-muted-foreground/20 p-0.5"
-                        aria-label={`Remove ${iso}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  );
-                })}
+                )}
               </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              MO dates are excluded from short-hour and violation calculations and applied automatically.
-            </p>
-          </CardContent>
-        </Card>
+              {sortedMo.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {sortedMo.map((d) => {
+                    const iso = toIsoDate(d);
+                    return (
+                      <Badge key={iso} variant="secondary" className="gap-1 pr-1">
+                        {format(d, "dd MMM yyyy")}
+                        <button
+                          type="button"
+                          onClick={() => removeMo(iso)}
+                          className="rounded hover:bg-muted-foreground/20 p-0.5"
+                          aria-label={`Remove ${iso}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                MO dates are excluded from short-hour and violation calculations.
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarDays className="h-4 w-4" /> Holidays (optional)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal")}>
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {holidayDates.length ? `${holidayDates.length} holiday${holidayDates.length === 1 ? "" : "s"} selected` : "Pick holiday dates"}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarDays className="h-4 w-4" /> Holidays (optional)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal")}>
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {holidayDates.length ? `${holidayDates.length} holiday${holidayDates.length === 1 ? "" : "s"} selected` : "Pick holiday dates"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="multiple"
+                      selected={holidayDates}
+                      onSelect={(dates) => setHolidayDates(dates ?? [])}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {holidayDates.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={() => setHolidayDates([])}>
+                    Clear all
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="multiple"
-                    selected={holidayDates}
-                    onSelect={(dates) => setHolidayDates(dates ?? [])}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              {holidayDates.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => setHolidayDates([])}>
-                  Clear all
-                </Button>
-              )}
-            </div>
-            {sortedHol.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {sortedHol.map((d) => {
-                  const iso = toIsoDate(d);
-                  return (
-                    <Badge key={iso} variant="secondary" className="gap-1 pr-1 border-amber-400">
-                      {format(d, "dd MMM yyyy")}
-                      <button
-                        type="button"
-                        onClick={() => removeHoliday(iso)}
-                        className="rounded hover:bg-muted-foreground/20 p-0.5"
-                        aria-label={`Remove ${iso}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  );
-                })}
+                )}
               </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Sundays and selected holidays count all worked hours as extra; no short hours or violations apply.
-            </p>
-          </CardContent>
-        </Card>
+              {sortedHol.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {sortedHol.map((d) => {
+                    const iso = toIsoDate(d);
+                    return (
+                      <Badge key={iso} variant="secondary" className="gap-1 pr-1 border-amber-400">
+                        {format(d, "dd MMM yyyy")}
+                        <button
+                          type="button"
+                          onClick={() => removeHoliday(iso)}
+                          className="rounded hover:bg-muted-foreground/20 p-0.5"
+                          aria-label={`Remove ${iso}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Sundays & holidays count all worked hours as extra; no short hours or violations.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
 
         {cycles.length > 0 && activeCycle && (
           <>
@@ -210,28 +213,37 @@ function Index() {
                   ))}
                 </SelectContent>
               </Select>
-              {(() => {
-                const totExtra = cycles.reduce((s, c) => s + c.totalExtraMins, 0);
-                const totShort = cycles.reduce((s, c) => s + c.totalShortMins, 0);
-                const totWorked = cycles.reduce((s, c) => s + c.totalMins, 0);
-                const net = totExtra - totShort;
-                const fmt = (m: number) => {
-                  const h = Math.floor(Math.abs(m) / 60);
-                  const mm = Math.round(Math.abs(m) % 60);
-                  return `${m < 0 ? "-" : ""}${h}h ${String(mm).padStart(2, "0")}m`;
-                };
-                return (
-                  <div className="ml-auto flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-md border px-2 py-1">Overall worked: <b>{fmt(totWorked)}</b></span>
-                    <span className="rounded-md border px-2 py-1">Overall extra: <b className="text-emerald-700">{fmt(totExtra)}</b></span>
-                    <span className="rounded-md border px-2 py-1">Overall short: <b className="text-red-700">{fmt(totShort)}</b></span>
-                    <span className={`rounded-md border px-2 py-1 ${net >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
-                      Overall net: <b>{net >= 0 ? "+" : ""}{fmt(net)}</b>
-                    </span>
-                  </div>
-                );
-              })()}
             </div>
+
+            {(() => {
+              const totExtra = cycles.reduce((s, c) => s + c.totalExtraMins, 0);
+              const totShort = cycles.reduce((s, c) => s + c.totalShortMins, 0);
+              const totWorked = cycles.reduce((s, c) => s + c.totalMins, 0);
+              const net = totExtra - totShort;
+              const fmt = (m: number) => {
+                const h = Math.floor(Math.abs(m) / 60);
+                const mm = Math.round(Math.abs(m) % 60);
+                return `${m < 0 ? "-" : ""}${h}h ${String(mm).padStart(2, "0")}m`;
+              };
+              const Tile = ({ label, value, className }: { label: string; value: string; className?: string }) => (
+                <div className="rounded-lg border bg-card p-4 shadow-sm">
+                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+                  <div className={`mt-1 text-2xl font-semibold ${className ?? ""}`}>{value}</div>
+                </div>
+              );
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Tile label="Overall worked" value={fmt(totWorked)} />
+                  <Tile label="Overall extra" value={fmt(totExtra)} className="text-emerald-700" />
+                  <Tile label="Overall short" value={fmt(totShort)} className="text-red-700" />
+                  <Tile
+                    label="Overall net"
+                    value={`${net >= 0 ? "+" : ""}${fmt(net)}`}
+                    className={net >= 0 ? "text-emerald-700" : "text-red-700"}
+                  />
+                </div>
+              );
+            })()}
 
             <MonthlySummary cycle={activeCycle} />
             <Charts cycle={activeCycle} />
