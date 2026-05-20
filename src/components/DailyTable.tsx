@@ -10,6 +10,7 @@ function statusBadge(d: DayResult) {
   if (d.hasError) return <Badge variant="destructive">Error</Badge>;
   if (d.isMo) return <Badge className="bg-indigo-600 hover:bg-indigo-600">MO</Badge>;
   if (d.isHoliday) return <Badge className="bg-amber-600 hover:bg-amber-600">Holiday</Badge>;
+  if (d.isOffSaturday) return <Badge className="bg-teal-600 hover:bg-teal-600">Off Sat</Badge>;
   if (d.isSunday) return <Badge className="bg-sky-600 hover:bg-sky-600">Sunday</Badge>;
   if (d.fullDayLeave) return <Badge className="bg-rose-600 hover:bg-rose-600">Leave</Badge>;
   if (d.status === "full") return <Badge className="bg-emerald-600 hover:bg-emerald-600">Full</Badge>;
@@ -38,7 +39,7 @@ function PunchChip({ p }: { p: Punch }) {
   );
 }
 
-export function DailyTable({ days }: { days: DayResult[] }) {
+export function DailyTable({ days, funMode = true }: { days: DayResult[]; funMode?: boolean }) {
   const exportCsv = () => {
     const rows = [
       ["Date", "Punches", "Worked", "Status", "Short/Extra", "Late", "Early Out", "Notes"],
@@ -103,12 +104,18 @@ export function DailyTable({ days }: { days: DayResult[] }) {
                   {!d.hasError && d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
                   {!d.hasError && d.extraMins > 0 && <Badge variant="outline" className="border-blue-500 text-blue-600">+{fmtHM(d.extraMins)}</Badge>}
                   {d.fullDayLeave && <Badge variant="destructive">1d leave</Badge>}
+                  {d.halfDayLeave && <Badge className="bg-rose-500 hover:bg-rose-500">½d leave</Badge>}
                 </TableCell>
                 <TableCell className="space-x-1">
                   {d.late && <Badge variant="outline" className="border-red-500 text-red-600">Late</Badge>}
                   {d.earlyOut && <Badge variant="outline" className="border-orange-500 text-orange-600">Early</Badge>}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">{d.notes.join(", ")}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  <div>{d.notes.join(", ")}</div>
+                  {funMode && d.funNote && (
+                    <div className="mt-1 italic text-[11px] text-indigo-500/80">{d.funNote}</div>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

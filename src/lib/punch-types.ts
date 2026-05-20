@@ -15,30 +15,56 @@ export interface DayResult {
   workedMins: number;
   lunchMins: number;
   status: "full" | "half" | "absent" | "error";
-  shortMins: number; // shortfall from required (full or half target)
-  extraMins: number; // worked minutes counted as extra (when < 2h, full leave deducted)
-  fullDayLeave: boolean; // true when < 2h ⇒ 1 full day leave deducted
+  shortMins: number;
+  extraMins: number;
+  fullDayLeave: boolean;
+  halfDayLeave: boolean;
   late: boolean;
   earlyOut: boolean;
   notes: string[];
+  funNote?: string;
   punches: Punch[];
   isMo: boolean;
   isOout: boolean;
   isHoliday: boolean;
   isSunday: boolean;
-  hasError: boolean; // odd number of punches
+  isOffSaturday: boolean;
+  hasError: boolean;
 }
 
-// Required daily minutes depend on month:
-//   April – December: 8h 40m (520)
-//   January – March:  8h 18m (498)
+// Full-day required minutes:
+//   Apr – Dec: 8h 40m (520)
+//   Jan – Mar: 8h 18m (498)
 export function requiredMinsForDate(date: string): number {
   const m = Number(date.split("-")[1]);
   return m >= 1 && m <= 3 ? 8 * 60 + 18 : 8 * 60 + 40;
 }
 
+// Half-day required minutes = exactly half of full-day required.
+export function halfRequiredMinsForDate(date: string): number {
+  return Math.round(requiredMinsForDate(date) / 2);
+}
+
+// Off-Saturday rules:
+//   - Apr–Dec of any year: 1st & 3rd Saturday off
+//   - Jan–Mar of year >= 2026 (FY 2025-26 Q4): 1st Saturday off
+export function isOffSaturdayDate(date: string): boolean {
+  const [y, m, d] = date.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (dt.getUTCDay() !== 6) return false;
+  // Which Saturday of the month? (1-indexed)
+  const nth = Math.floor((d - 1) / 7) + 1;
+  if (m >= 4 && m <= 12) {
+    return nth === 1 || nth === 3;
+  }
+  if (m >= 1 && m <= 3 && y >= 2026) {
+    return nth === 1;
+  }
+  return false;
+}
+
 export interface CycleSummary {
-  label: string; // e.g. "Apr 23 – May 22, 2026"
+  label: string;
   start: string;
   end: string;
   days: DayResult[];
@@ -49,15 +75,16 @@ export interface CycleSummary {
   totalShortMins: number;
   totalExtraMins: number;
   violations: number;
-  leaveDeducted: number; // total days: full-day leaves from <2h days + 0.5 if violations>3
+  leaveDeducted: number;
   fullDayLeaves: number;
-  violationLeave: number; // 0 or 0.5
+  halfDayLeaves: number;
+  violationLeave: number;
 }
 
-export const REQUIRED_MINS = 8 * 60 + 40; // 520
-export const HALF_MINS = 4 * 60 + 20; // 260
-export const MIN_HALF_MINS = 2 * 60; // 120
-export const LATE_CUTOFF_MINS = 10 * 60 + 1; // 601 — after 10:01:00
-export const EARLY_CUTOFF_MINS = 15 * 60; // 900 — before 15:00:00
-export const HALF_DAY_PUNCH_CUTOFF = 11 * 60; // 660 — punch >= 11:00 ⇒ half day
-export const FULL_DAY_MIN_MINS = 5 * 60; // 300 — < 5h is half day
+export const REQUIRED_MINS = 8 * 60 + 40;
+export const HALF_MINS = 4 * 60 + 20;
+export const MIN_HALF_MINS = 2 * 60;
+export const LATE_CUTOFF_MINS = 10 * 60 + 1; // > 10:00 ⇒ late-arrival (full-day violation)
+export const EARLY_CUTOFF_MINS = 15 * 60; // < 15:00 ⇒ early-out
+export const HALF_DAY_PUNCH_CUTOFF = 11 * 60; // > 11:00 ⇒ half day
+export const FULL_DAY_MIN_MINS = 5 * 60;

@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { parsePunches } from "@/lib/punch-parser";
 import { computeAllDays, groupByCycle } from "@/lib/hours-calc";
 import { Clock, CalendarDays, X } from "lucide-react";
@@ -39,6 +41,10 @@ function Index() {
   const [moDates, setMoDates] = useState<Date[]>([]);
   const [holidayDates, setHolidayDates] = useState<Date[]>([]);
   const [selectedCycle, setSelectedCycle] = useState<string>("");
+  const [funMode, setFunMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("funMode") !== "0";
+  });
 
   const moKey = useMemo(() => moDates.map(toIsoDate).sort().join(","), [moDates]);
   const holKey = useMemo(() => holidayDates.map(toIsoDate).sort().join(","), [holidayDates]);
@@ -213,6 +219,17 @@ function Index() {
                   ))}
                 </SelectContent>
               </Select>
+              <div className="ml-auto flex items-center gap-2">
+                <Label htmlFor="fun-mode" className="text-xs text-muted-foreground">Hinglish notes</Label>
+                <Switch
+                  id="fun-mode"
+                  checked={funMode}
+                  onCheckedChange={(v) => {
+                    setFunMode(v);
+                    if (typeof window !== "undefined") window.localStorage.setItem("funMode", v ? "1" : "0");
+                  }}
+                />
+              </div>
             </div>
 
             {(() => {
@@ -247,7 +264,7 @@ function Index() {
 
             <MonthlySummary cycle={activeCycle} />
             <Charts cycle={activeCycle} />
-            <DailyTable days={activeCycle.days} />
+            <DailyTable days={activeCycle.days} funMode={funMode} />
           </>
         )}
 
