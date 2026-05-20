@@ -50,6 +50,7 @@ export function MonthlySummary({ cycle }: { cycle: CycleSummary }) {
           icon={<MinusCircle className="h-5 w-5" />}
           tone={cycle.leaveDeducted ? "bg-red-100 text-red-700" : "bg-muted"}
         />
+        </div>
       </CardContent>
     </Card>
   );
