@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CycleSummary } from "@/lib/punch-types";
 import { fmtHM } from "@/lib/hours-calc";
+import { HealthMeter } from "@/components/HealthMeter";
 import { AlertTriangle, CheckCircle2, Clock, MinusCircle } from "lucide-react";
 
 function Stat({ label, value, icon, tone }: { label: string; value: string; icon: React.ReactNode; tone?: string }) {
@@ -21,7 +22,9 @@ export function MonthlySummary({ cycle }: { cycle: CycleSummary }) {
       <CardHeader>
         <CardTitle>Monthly Summary — {cycle.label}</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <CardContent className="space-y-4">
+        <HealthMeter cycle={cycle} />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Stat label="Full Days" value={String(cycle.fullDays)} icon={<CheckCircle2 className="h-5 w-5" />} tone="bg-emerald-100 text-emerald-700" />
         <Stat label="Half Days" value={String(cycle.halfDays)} icon={<MinusCircle className="h-5 w-5" />} tone="bg-amber-100 text-amber-700" />
         <Stat label="Absents" value={String(cycle.absents)} icon={<AlertTriangle className="h-5 w-5" />} tone="bg-red-100 text-red-700" />

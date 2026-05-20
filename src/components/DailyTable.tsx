@@ -39,7 +39,7 @@ function PunchChip({ p }: { p: Punch }) {
   );
 }
 
-export function DailyTable({ days }: { days: DayResult[] }) {
+export function DailyTable({ days, funMode = true }: { days: DayResult[]; funMode?: boolean }) {
   const exportCsv = () => {
     const rows = [
       ["Date", "Punches", "Worked", "Status", "Short/Extra", "Late", "Early Out", "Notes"],
@@ -104,12 +104,18 @@ export function DailyTable({ days }: { days: DayResult[] }) {
                   {!d.hasError && d.shortMins > 0 && <Badge variant="outline" className="border-red-500 text-red-600">−{fmtHM(d.shortMins)}</Badge>}
                   {!d.hasError && d.extraMins > 0 && <Badge variant="outline" className="border-blue-500 text-blue-600">+{fmtHM(d.extraMins)}</Badge>}
                   {d.fullDayLeave && <Badge variant="destructive">1d leave</Badge>}
+                  {d.halfDayLeave && <Badge className="bg-rose-500 hover:bg-rose-500">½d leave</Badge>}
                 </TableCell>
                 <TableCell className="space-x-1">
                   {d.late && <Badge variant="outline" className="border-red-500 text-red-600">Late</Badge>}
                   {d.earlyOut && <Badge variant="outline" className="border-orange-500 text-orange-600">Early</Badge>}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">{d.notes.join(", ")}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  <div>{d.notes.join(", ")}</div>
+                  {funMode && d.funNote && (
+                    <div className="mt-1 italic text-[11px] text-indigo-500/80">{d.funNote}</div>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
