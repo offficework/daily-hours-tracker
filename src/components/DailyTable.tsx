@@ -10,6 +10,7 @@ function statusBadge(d: DayResult) {
   if (d.hasError) return <Badge variant="destructive">Error</Badge>;
   if (d.isMo) return <Badge className="bg-indigo-600 hover:bg-indigo-600">MO</Badge>;
   if (d.isHoliday) return <Badge className="bg-amber-600 hover:bg-amber-600">Holiday</Badge>;
+  if (d.isOffSaturday) return <Badge className="bg-teal-600 hover:bg-teal-600">Off Sat</Badge>;
   if (d.isSunday) return <Badge className="bg-sky-600 hover:bg-sky-600">Sunday</Badge>;
   if (d.fullDayLeave) return <Badge className="bg-rose-600 hover:bg-rose-600">Leave</Badge>;
   if (d.status === "full") return <Badge className="bg-emerald-600 hover:bg-emerald-600">Full</Badge>;
