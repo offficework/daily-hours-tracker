@@ -201,6 +201,7 @@ export function computeDay(
   extraMins = Math.round(extraMins);
 
   if (hasOout || isMo || isRest) shortMins = 0;
+  if (isMo) extraMins = 0;
 
   // Violation determination
   let late = false;
