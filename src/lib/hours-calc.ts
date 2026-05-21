@@ -151,19 +151,6 @@ export function computeDay(
   else if (isOffSat) notes.push("Off Saturday — all hours extra");
   else if (isSunday) notes.push("Sunday — all hours extra");
 
-  // Core-hours check (rule 31): for half-day, need ≥ 2h either before 10:00 OR after 12:30.
-  // We approximate by summing IN/OUT pairs that overlap those windows.
-  let morningCore = 0;
-  let afternoonCore = 0;
-  for (let k = 0; k + 1 < punches.length; k += 2) {
-    const a = punches[k];
-    const b = punches[k + 1];
-    if (a.code === "LWRK") continue; // lunch chunk
-    morningCore += overlap(a.minutes, b.minutes, 0, CORE_MORNING_END);
-    afternoonCore += overlap(a.minutes, b.minutes, CORE_AFTERNOON_START, 24 * 60);
-  }
-  const coreSatisfied = morningCore >= MIN_HALF_MINS || afternoonCore >= MIN_HALF_MINS;
-
   const lateHalfDay = firstIn.minutes > HALF_DAY_VIOLATION_CUTOFF; // > 13:30
   const lateFullDayArrival =
     firstIn.minutes >= LATE_CUTOFF_MINS && firstIn.minutes < HALF_DAY_PUNCH_CUTOFF;
@@ -180,19 +167,17 @@ export function computeDay(
   let fullDayLeave = false;
   let halfDayLeave = false;
 
-  if (isRest) {
+  if (isMo) {
+    // MO day with punches: show actual worked time but no short/extra/violation/leave impact.
+    status = "full";
+    notes.push("MO day — no short/extra/violation");
+  } else if (isRest) {
     status = "full";
     extraMins = Math.round(computedWork);
   } else if (computedWork < MIN_HALF_MINS) {
-    // Rule 36 / 20-21
     status = "absent";
-    if (isMo) {
-      halfDayLeave = true;
-      notes.push("MO day < 2h — half day leave deducted");
-    } else {
-      fullDayLeave = true;
-      notes.push("< 2h — full day leave; hours = extra");
-    }
+    fullDayLeave = true;
+    notes.push("< 2h — full day leave; hours = extra");
     extraMins = Math.round(computedWork);
   } else if (
     firstIn.minutes >= HALF_DAY_PUNCH_CUTOFF ||
@@ -204,11 +189,6 @@ export function computeDay(
     if (lateHalfDay) notes.push("Arrived > 13:30 — half day + violation");
     if (computedWork >= HALF_REQ) extraMins = computedWork - HALF_REQ;
     else shortMins = HALF_REQ - computedWork;
-    // Core-hours rule 31-32
-    if (!coreSatisfied && !isMo) {
-      halfDayLeave = true;
-      notes.push("Half-day core hours not met — half day leave deducted");
-    }
   } else if (computedWork < REQ) {
     status = "full";
     shortMins = REQ - computedWork;
