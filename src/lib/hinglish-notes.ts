@@ -47,19 +47,14 @@ function pick(arr: string[], seed: string): string {
 }
 
 export function funNoteFor(d: DayResult): string {
+  // Only emit fun notes for noteworthy days — keep regular full/half/rest rows clean.
   if (d.hasError) return pick(POOLS.error, d.date);
   if (d.fullDayLeave || d.halfDayLeave) return pick(POOLS.leave, d.date);
-  if (d.isHoliday || d.isSunday || d.isOffSaturday) return pick(POOLS.rest, d.date);
-  if (d.isMo) return "MO chill mode 🧘";
-  if (d.late || d.earlyOut) {
-    const parts: string[] = [];
-    if (d.late) parts.push(pick(POOLS.late, d.date));
-    if (d.earlyOut) parts.push(pick(POOLS.early, d.date + "e"));
-    if (parts.length === 2) parts.push(pick(POOLS.violation, d.date + "v"));
-    return parts.join(" · ");
-  }
-  if (d.status === "half") return pick(POOLS.half, d.date);
-  if (d.extraMins >= 30) return pick(POOLS.extra, d.date);
-  if (d.status === "full") return pick(POOLS.full, d.date);
+  if (d.isMo || d.isHoliday || d.isSunday || d.isOffSaturday) return "";
+  if (d.late && d.earlyOut) return pick(POOLS.violation, d.date + "v");
+  if (d.late) return pick(POOLS.late, d.date);
+  if (d.earlyOut) return pick(POOLS.early, d.date + "e");
+  if (d.status === "absent") return pick(POOLS.leave, d.date);
+  if (d.extraMins >= 60) return pick(POOLS.extra, d.date);
   return "";
 }
