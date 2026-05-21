@@ -42,8 +42,8 @@ function Index() {
   const [holidayDates, setHolidayDates] = useState<Date[]>([]);
   const [selectedCycle, setSelectedCycle] = useState<string>("");
   const [funMode, setFunMode] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
-    return window.localStorage.getItem("funMode") !== "0";
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("funMode") === "1";
   });
 
   const moKey = useMemo(() => moDates.map(toIsoDate).sort().join(","), [moDates]);
