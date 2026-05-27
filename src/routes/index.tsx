@@ -262,6 +262,7 @@ function Index() {
               const totExtra = cycles.reduce((s, c) => s + c.totalExtraMins, 0);
               const totShort = cycles.reduce((s, c) => s + c.totalShortMins, 0);
               const totWorked = cycles.reduce((s, c) => s + c.totalMins, 0);
+              const totViolations = cycles.reduce((s, c) => s + c.violations, 0);
               const net = totExtra - totShort;
               const fmt = (m: number) => {
                 const h = Math.floor(Math.abs(m) / 60);
@@ -275,18 +276,24 @@ function Index() {
                 </div>
               );
               return (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <Tile label="Overall worked" value={fmt(totWorked)} />
-                  <Tile label="Overall extra" value={fmt(totExtra)} className="text-emerald-700" />
-                  <Tile label="Overall short" value={fmt(totShort)} className="text-red-700" />
+                  <Tile label="Overall extra" value={fmt(totExtra)} className="text-emerald-600 dark:text-emerald-400" />
+                  <Tile label="Overall short" value={fmt(totShort)} className="text-red-600 dark:text-red-400" />
                   <Tile
                     label="Overall net"
                     value={`${net >= 0 ? "+" : ""}${fmt(net)}`}
-                    className={net >= 0 ? "text-emerald-700" : "text-red-700"}
+                    className={net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}
+                  />
+                  <Tile
+                    label="Violations"
+                    value={String(totViolations)}
+                    className={totViolations > 3 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}
                   />
                 </div>
               );
             })()}
+
 
             <MonthlySummary cycle={activeCycle} />
             <Charts cycle={activeCycle} />
