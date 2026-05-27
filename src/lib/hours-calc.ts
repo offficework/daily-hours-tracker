@@ -109,32 +109,50 @@ export function computeDay(
     });
   }
 
-  // LWRK lunch protection
+  // Pair up punches sequentially. Each (in, out) pair contributes its duration
+  // to worked time. Gaps BETWEEN pairs (out → next in) are unworked and
+  // naturally excluded. LWRK pairs deduct lunch time except the part that
+  // overlaps the protected 12:00–12:30 window.
+  let computedWork = 0;
   let lwrkDeduct = 0;
   let lwrkRawMins = 0;
   let lwrkProtected = 0;
   let hasLwrk = false;
-  const lwrkIdx = punches.map((p, i) => (p.code === "LWRK" ? i : -1)).filter((i) => i >= 0);
-  for (let k = 0; k + 1 < lwrkIdx.length; k += 2) {
-    const a = punches[lwrkIdx[k]];
-    const b = punches[lwrkIdx[k + 1]];
-    const dur = b.minutes - a.minutes;
-    if (dur <= 0) continue;
-    hasLwrk = true;
-    lwrkRawMins += dur;
-    const prot = overlap(a.minutes, b.minutes, LUNCH_START, LUNCH_END);
-    lwrkProtected += prot;
-    lwrkDeduct += dur - prot;
+  for (let i = 0; i + 1 < punches.length; i += 2) {
+    const a = punches[i];
+    const b = punches[i + 1];
+    const dur = Math.max(0, b.minutes - a.minutes);
+    const isLwrkPair = a.code === "LWRK" || b.code === "LWRK";
+    if (isLwrkPair) {
+      hasLwrk = true;
+      lwrkRawMins += dur;
+      const prot = overlap(a.minutes, b.minutes, LUNCH_START, LUNCH_END);
+      lwrkProtected += prot;
+      lwrkDeduct += dur - prot;
+      computedWork += prot; // protected lunch counts as worked
+    } else {
+      computedWork += dur;
+    }
   }
+
+  // Note any off-floor gaps between consecutive pairs (out → next in) that are not LWRK.
+  let offFloorMins = 0;
+  for (let i = 1; i + 1 < punches.length; i += 2) {
+    const out = punches[i];
+    const nextIn = punches[i + 1];
+    const gap = nextIn.minutes - out.minutes;
+    if (gap > 0 && out.code !== "LWRK" && nextIn.code !== "LWRK") {
+      offFloorMins += gap;
+      notes.push(`Off-floor ${fmtHM(gap)} (${out.time}–${nextIn.time}) — deducted`);
+    }
+  }
+
 
   const codes = new Set(punches.map((p) => p.code));
   const hasOout = codes.has("OOUT");
 
   const firstIn = punches[0];
   const lastOut = punches[punches.length - 1];
-  const totalSpan = lastOut.minutes - firstIn.minutes;
-  let computedWork = totalSpan - lwrkDeduct;
-  if (computedWork < 0) computedWork = 0;
 
   if (hasLwrk) {
     notes.push(
@@ -143,6 +161,7 @@ export function computeDay(
         : `LWRK ${fmtHM(lwrkRawMins)} deducted`
     );
   }
+
   if (hasOout) notes.push("OOUT (no short hours)");
   if (codes.has("REG")) notes.push("REG");
   if (codes.has("POUT")) notes.push("POUT");

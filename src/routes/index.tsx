@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { parsePunches } from "@/lib/punch-parser";
 import { computeAllDays, groupByCycle } from "@/lib/hours-calc";
-import { Clock, CalendarDays, X } from "lucide-react";
+import { Clock, CalendarDays, X, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -45,6 +45,24 @@ function Index() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("funMode") === "1";
   });
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "light";
+    const stored = window.localStorage.getItem("theme");
+    if (stored === "dark" || stored === "light") return stored;
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+
+  if (typeof document !== "undefined") {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      if (typeof window !== "undefined") window.localStorage.setItem("theme", next);
+      return next;
+    });
+  };
 
   const moKey = useMemo(() => moDates.map(toIsoDate).sort().join(","), [moDates]);
   const holKey = useMemo(() => holidayDates.map(toIsoDate).sort().join(","), [holidayDates]);
@@ -78,10 +96,18 @@ function Index() {
       <header className="border-b bg-card">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
           <Clock className="h-6 w-6 text-primary" />
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-semibold">Employee Hours Calculator</h1>
             <p className="text-xs text-muted-foreground">Cycle: 23rd → 22nd · 8h 40m (Apr–Dec) / 8h 18m (Jan–Mar)</p>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
         </div>
       </header>
 
@@ -236,6 +262,7 @@ function Index() {
               const totExtra = cycles.reduce((s, c) => s + c.totalExtraMins, 0);
               const totShort = cycles.reduce((s, c) => s + c.totalShortMins, 0);
               const totWorked = cycles.reduce((s, c) => s + c.totalMins, 0);
+              const totViolations = cycles.reduce((s, c) => s + c.violations, 0);
               const net = totExtra - totShort;
               const fmt = (m: number) => {
                 const h = Math.floor(Math.abs(m) / 60);
@@ -249,18 +276,24 @@ function Index() {
                 </div>
               );
               return (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <Tile label="Overall worked" value={fmt(totWorked)} />
-                  <Tile label="Overall extra" value={fmt(totExtra)} className="text-emerald-700" />
-                  <Tile label="Overall short" value={fmt(totShort)} className="text-red-700" />
+                  <Tile label="Overall extra" value={fmt(totExtra)} className="text-emerald-600 dark:text-emerald-400" />
+                  <Tile label="Overall short" value={fmt(totShort)} className="text-red-600 dark:text-red-400" />
                   <Tile
                     label="Overall net"
                     value={`${net >= 0 ? "+" : ""}${fmt(net)}`}
-                    className={net >= 0 ? "text-emerald-700" : "text-red-700"}
+                    className={net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}
+                  />
+                  <Tile
+                    label="Violations"
+                    value={String(totViolations)}
+                    className={totViolations > 3 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}
                   />
                 </div>
               );
             })()}
+
 
             <MonthlySummary cycle={activeCycle} />
             <Charts cycle={activeCycle} />
