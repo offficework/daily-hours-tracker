@@ -135,6 +135,19 @@ export function computeDay(
     }
   }
 
+  // Note any off-floor gaps between consecutive pairs (out → next in) that are not LWRK.
+  let offFloorMins = 0;
+  for (let i = 1; i + 1 < punches.length; i += 2) {
+    const out = punches[i];
+    const nextIn = punches[i + 1];
+    const gap = nextIn.minutes - out.minutes;
+    if (gap > 0 && out.code !== "LWRK" && nextIn.code !== "LWRK") {
+      offFloorMins += gap;
+      notes.push(`Off-floor ${fmtHM(gap)} (${out.time}–${nextIn.time}) — deducted`);
+    }
+  }
+
+
   const codes = new Set(punches.map((p) => p.code));
   const hasOout = codes.has("OOUT");
 
