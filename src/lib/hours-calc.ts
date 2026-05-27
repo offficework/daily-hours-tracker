@@ -109,10 +109,10 @@ export function computeDay(
     });
   }
 
-  // Pair up punches sequentially. Each (in, out) pair contributes its duration
-  // to worked time. Gaps BETWEEN pairs (out → next in) are unworked and
-  // naturally excluded. LWRK pairs deduct lunch time except the part that
-  // overlaps the protected 12:00–12:30 window.
+  // Pair punches sequentially as (in, out). Each pair's full duration is
+  // worked time. LWRK punches mark the START/END of a lunch break, so the
+  // lunch period is the GAP between two consecutive LWRK punches (handled
+  // in the gap loop below), NOT the surrounding work pairs.
   let computedWork = 0;
   let lwrkDeduct = 0;
   let lwrkRawMins = 0;
@@ -121,24 +121,14 @@ export function computeDay(
   for (let i = 0; i + 1 < punches.length; i += 2) {
     const a = punches[i];
     const b = punches[i + 1];
-    const dur = Math.max(0, b.minutes - a.minutes);
-    const isLwrkPair = a.code === "LWRK" || b.code === "LWRK";
-    if (isLwrkPair) {
-      hasLwrk = true;
-      lwrkRawMins += dur;
-      const prot = overlap(a.minutes, b.minutes, LUNCH_START, LUNCH_END);
-      lwrkProtected += prot;
-      lwrkDeduct += dur - prot;
-      computedWork += prot; // protected lunch counts as worked
-    } else {
-      computedWork += dur;
-    }
+    computedWork += Math.max(0, b.minutes - a.minutes);
   }
 
   // Gaps between consecutive pairs (out → next in).
-  // - OOUT gaps (official out): counted as worked, no deduction.
-  // - LWRK gaps: handled within LWRK pair logic above.
-  // - Other gaps: off-floor, deducted (already excluded from computedWork) and noted.
+  // - LWRK → LWRK: lunch break. Already excluded from work; add back the
+  //   portion overlapping 12:00–12:30 as protected worked time.
+  // - OOUT on either side: official out, counted as worked.
+  // - Otherwise: off-floor, deducted and noted.
   let offFloorMins = 0;
   let ooutAddedMins = 0;
   for (let i = 1; i + 1 < punches.length; i += 2) {
@@ -146,10 +136,17 @@ export function computeDay(
     const nextIn = punches[i + 1];
     const gap = nextIn.minutes - out.minutes;
     if (gap <= 0) continue;
-    if (out.code === "OOUT" || nextIn.code === "OOUT") {
+    if (out.code === "LWRK" && nextIn.code === "LWRK") {
+      hasLwrk = true;
+      lwrkRawMins += gap;
+      const prot = overlap(out.minutes, nextIn.minutes, LUNCH_START, LUNCH_END);
+      lwrkProtected += prot;
+      lwrkDeduct += gap - prot;
+      computedWork += prot;
+    } else if (out.code === "OOUT" || nextIn.code === "OOUT") {
       computedWork += gap;
       ooutAddedMins += gap;
-    } else if (out.code !== "LWRK" && nextIn.code !== "LWRK") {
+    } else {
       offFloorMins += gap;
       notes.push(`Off-floor ${fmtHM(gap)} (${out.time}–${nextIn.time}) — deducted`);
     }
