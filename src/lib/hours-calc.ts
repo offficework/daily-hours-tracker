@@ -135,17 +135,26 @@ export function computeDay(
     }
   }
 
-  // Note any off-floor gaps between consecutive pairs (out → next in) that are not LWRK.
+  // Gaps between consecutive pairs (out → next in).
+  // - OOUT gaps (official out): counted as worked, no deduction.
+  // - LWRK gaps: handled within LWRK pair logic above.
+  // - Other gaps: off-floor, deducted (already excluded from computedWork) and noted.
   let offFloorMins = 0;
+  let ooutAddedMins = 0;
   for (let i = 1; i + 1 < punches.length; i += 2) {
     const out = punches[i];
     const nextIn = punches[i + 1];
     const gap = nextIn.minutes - out.minutes;
-    if (gap > 0 && out.code !== "LWRK" && nextIn.code !== "LWRK") {
+    if (gap <= 0) continue;
+    if (out.code === "OOUT" || nextIn.code === "OOUT") {
+      computedWork += gap;
+      ooutAddedMins += gap;
+    } else if (out.code !== "LWRK" && nextIn.code !== "LWRK") {
       offFloorMins += gap;
       notes.push(`Off-floor ${fmtHM(gap)} (${out.time}–${nextIn.time}) — deducted`);
     }
   }
+  if (ooutAddedMins > 0) notes.push(`OOUT ${fmtHM(ooutAddedMins)} counted as worked`);
 
 
   const codes = new Set(punches.map((p) => p.code));
