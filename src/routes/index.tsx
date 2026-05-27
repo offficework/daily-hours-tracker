@@ -45,6 +45,24 @@ function Index() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("funMode") === "1";
   });
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "light";
+    const stored = window.localStorage.getItem("theme");
+    if (stored === "dark" || stored === "light") return stored;
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+
+  if (typeof document !== "undefined") {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      if (typeof window !== "undefined") window.localStorage.setItem("theme", next);
+      return next;
+    });
+  };
 
   const moKey = useMemo(() => moDates.map(toIsoDate).sort().join(","), [moDates]);
   const holKey = useMemo(() => holidayDates.map(toIsoDate).sort().join(","), [holidayDates]);
