@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { parsePunches } from "@/lib/punch-parser";
 import { computeAllDays, groupByCycle } from "@/lib/hours-calc";
-import { Clock, CalendarDays, X } from "lucide-react";
+import { Clock, CalendarDays, X, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
