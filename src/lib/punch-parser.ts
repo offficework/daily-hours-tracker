@@ -1,8 +1,8 @@
 import type { Punch } from "./punch-types";
 
 function toMinutes(time: string): number {
-  const [h, m, s] = time.split(":").map(Number);
-  return h * 60 + m + (s || 0) / 60;
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
 }
 
 function parseDate(dmy: string): string {
@@ -29,10 +29,11 @@ export function parsePunches(raw: string): Punch[] {
     const [dStr, tStr, clock, code] = tokens;
     if (!/^\d{2}\.\d{2}\.\d{4}$/.test(dStr)) continue;
     if (!/^\d{2}:\d{2}:\d{2}$/.test(tStr)) continue;
+    const hhmm = tStr.slice(0, 5);
     punches.push({
       date: parseDate(dStr),
-      time: tStr,
-      minutes: toMinutes(tStr),
+      time: hhmm,
+      minutes: toMinutes(hhmm),
       clock,
       code: code.toUpperCase(),
     });
