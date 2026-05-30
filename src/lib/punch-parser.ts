@@ -1,8 +1,8 @@
 import type { Punch } from "./punch-types";
 
 function toMinutes(time: string): number {
-  const [h, m, s] = time.split(":").map(Number);
-  return h * 60 + m + (s || 0) / 60;
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
 }
 
 function parseDate(dmy: string): string {
