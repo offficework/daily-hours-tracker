@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { PunchInput } from "@/components/PunchInput";
 import { DailyTable } from "@/components/DailyTable";
@@ -51,6 +51,8 @@ function Index() {
     if (stored === "dark" || stored === "light") return stored;
     return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   if (typeof document !== "undefined") {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -100,13 +102,8 @@ function Index() {
             <h1 className="text-xl font-semibold">Employee Hours Calculator</h1>
             <p className="text-xs text-muted-foreground">Cycle: 23rd → 22nd · 8h 40m (Apr–Dec) / 8h 18m (Jan–Mar)</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+            {mounted && theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
         </div>
       </header>
@@ -263,6 +260,9 @@ function Index() {
               const totShort = cycles.reduce((s, c) => s + c.totalShortMins, 0);
               const totWorked = cycles.reduce((s, c) => s + c.totalMins, 0);
               const totViolations = cycles.reduce((s, c) => s + c.violations, 0);
+              const totFullDays = cycles.reduce((s, c) => s + c.fullDays, 0);
+              const totHalfDays = cycles.reduce((s, c) => s + c.halfDays, 0);
+              const totPresentDays = totFullDays + totHalfDays;
               const net = totExtra - totShort;
               const fmt = (m: number) => {
                 const h = Math.floor(Math.abs(m) / 60);
@@ -276,8 +276,9 @@ function Index() {
                 </div>
               );
               return (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                   <Tile label="Overall worked" value={fmt(totWorked)} />
+                  <Tile label="Present days" value={`${totPresentDays}`} />
                   <Tile label="Overall extra" value={fmt(totExtra)} className="text-emerald-600 dark:text-emerald-400" />
                   <Tile label="Overall short" value={fmt(totShort)} className="text-red-600 dark:text-red-400" />
                   <Tile
