@@ -46,7 +46,6 @@ export function HealthMeter({ cycle }: { cycle: CycleSummary }) {
       <div className="flex-1">
         <div className="text-xs uppercase tracking-wide text-muted-foreground">Attendance Health</div>
         <div className="text-2xl font-semibold" style={{ color: b.color }}>{b.label}</div>
-        <div className="text-sm text-muted-foreground italic mt-1">{b.tag}</div>
       </div>
     </div>
   );
