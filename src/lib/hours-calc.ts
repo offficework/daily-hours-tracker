@@ -217,6 +217,7 @@ export function computeDay(
   ) {
     status = "half";
     if (lateHalfDay) notes.push("Arrived > 13:30 — half day + violation");
+    if (lateArrivalShortDay) notes.push("Arrived after 11:00 and left before 13:30 — half day + violation");
     if (computedWork >= HALF_REQ) extraMins = computedWork - HALF_REQ;
     else shortMins = HALF_REQ - computedWork;
   } else if (computedWork < REQ) {
