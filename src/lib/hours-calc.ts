@@ -179,6 +179,11 @@ export function computeDay(
   const lateHalfDay = firstIn.minutes > HALF_DAY_VIOLATION_CUTOFF; // > 13:30
   const lateFullDayArrival =
     firstIn.minutes >= LATE_CUTOFF_MINS && firstIn.minutes < HALF_DAY_PUNCH_CUTOFF;
+  // Arrived after 11:00 and left before 13:30 with ≥2h worked ⇒ half day + violation.
+  const lateArrivalShortDay =
+    firstIn.minutes > HALF_DAY_PUNCH_CUTOFF &&
+    lastOut.minutes < HALF_DAY_VIOLATION_CUTOFF &&
+    computedWork >= MIN_HALF_MINS;
   // Early-out only relevant for full-day attempts (firstIn < 11:00) AND when worked ≥ 5h.
   const earlyOutCandidate =
     firstIn.minutes < HALF_DAY_PUNCH_CUTOFF &&
@@ -212,6 +217,7 @@ export function computeDay(
   ) {
     status = "half";
     if (lateHalfDay) notes.push("Arrived > 13:30 — half day + violation");
+    if (lateArrivalShortDay) notes.push("Arrived after 11:00 and left before 13:30 — half day + violation");
     if (computedWork >= HALF_REQ) extraMins = computedWork - HALF_REQ;
     else shortMins = HALF_REQ - computedWork;
   } else if (computedWork < REQ) {
@@ -233,7 +239,8 @@ export function computeDay(
   let early = false;
   if (!isMo && !isRest && !fullDayLeave) {
     // Late arrival (10:01–10:59) is a violation regardless of half/full day.
-    late = lateFullDayArrival || lateHalfDay;
+    // Arrived after 11:00 and left before 13:30 with ≥2h worked is also a violation.
+    late = lateFullDayArrival || lateHalfDay || lateArrivalShortDay;
     early = earlyOut;
   }
 
