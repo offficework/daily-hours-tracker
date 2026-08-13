@@ -51,6 +51,8 @@ function Index() {
     if (stored === "dark" || stored === "light") return stored;
     return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   if (typeof document !== "undefined") {
     document.documentElement.classList.toggle("dark", theme === "dark");
