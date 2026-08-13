@@ -102,17 +102,8 @@ function Index() {
             <h1 className="text-xl font-semibold">Employee Hours Calculator</h1>
             <p className="text-xs text-muted-foreground">Cycle: 23rd → 22nd · 8h 40m (Apr–Dec) / 8h 18m (Jan–Mar)</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            aria-label={mounted ? `Switch to ${theme === "dark" ? "light" : "dark" mode` : "Toggle theme"}
-          >
-            {mounted ? (
-              theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+            {mounted && theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
         </div>
       </header>
