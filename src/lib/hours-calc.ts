@@ -232,7 +232,8 @@ export function computeDay(
   let late = false;
   let early = false;
   if (!isMo && !isRest && !fullDayLeave) {
-    late = (status === "full" && lateFullDayArrival) || lateHalfDay;
+    // Late arrival (10:01–10:59) is a violation regardless of half/full day.
+    late = lateFullDayArrival || lateHalfDay;
     early = earlyOut;
   }
 
