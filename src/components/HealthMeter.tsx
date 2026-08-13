@@ -12,10 +12,10 @@ export function computeHealthScore(c: CycleSummary): number {
 }
 
 function band(score: number) {
-  if (score >= 90) return { label: "Excellent", color: "#10b981", tag: "Aaj toh HR bhi khush hoga 😎" };
-  if (score >= 70) return { label: "Good", color: "#3b82f6", tag: "Solid month, keep going 💪" };
-  if (score >= 50) return { label: "Risk Zone", color: "#f59e0b", tag: "Thoda sambhalna padega ⚠️" };
-  return { label: "HR Incoming ☎️", color: "#ef4444", tag: "Resume update kar lo bhai 😬" };
+  if (score >= 90) return { label: "Excellent", color: "#10b981" };
+  if (score >= 70) return { label: "Good", color: "#3b82f6" };
+  if (score >= 50) return { label: "Risk Zone", color: "#f59e0b" };
+  return { label: "Needs Attention", color: "#ef4444" };
 }
 
 export function HealthMeter({ cycle }: { cycle: CycleSummary }) {
@@ -46,7 +46,6 @@ export function HealthMeter({ cycle }: { cycle: CycleSummary }) {
       <div className="flex-1">
         <div className="text-xs uppercase tracking-wide text-muted-foreground">Attendance Health</div>
         <div className="text-2xl font-semibold" style={{ color: b.color }}>{b.label}</div>
-        <div className="text-sm text-muted-foreground italic mt-1">{b.tag}</div>
       </div>
     </div>
   );
