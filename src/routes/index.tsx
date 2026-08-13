@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { PunchInput } from "@/components/PunchInput";
 import { DailyTable } from "@/components/DailyTable";
