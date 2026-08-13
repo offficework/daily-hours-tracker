@@ -106,9 +106,13 @@ function Index() {
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            aria-label={mounted ? `Switch to ${theme === "dark" ? "light" : "dark" mode` : "Toggle theme"}
           >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {mounted ? (
+              theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
           </Button>
         </div>
       </header>
@@ -265,6 +269,9 @@ function Index() {
               const totShort = cycles.reduce((s, c) => s + c.totalShortMins, 0);
               const totWorked = cycles.reduce((s, c) => s + c.totalMins, 0);
               const totViolations = cycles.reduce((s, c) => s + c.violations, 0);
+              const totFullDays = cycles.reduce((s, c) => s + c.fullDays, 0);
+              const totHalfDays = cycles.reduce((s, c) => s + c.halfDays, 0);
+              const totPresentDays = totFullDays + totHalfDays;
               const net = totExtra - totShort;
               const fmt = (m: number) => {
                 const h = Math.floor(Math.abs(m) / 60);
@@ -278,8 +285,9 @@ function Index() {
                 </div>
               );
               return (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                   <Tile label="Overall worked" value={fmt(totWorked)} />
+                  <Tile label="Present days" value={`${totPresentDays}`} />
                   <Tile label="Overall extra" value={fmt(totExtra)} className="text-emerald-600 dark:text-emerald-400" />
                   <Tile label="Overall short" value={fmt(totShort)} className="text-red-600 dark:text-red-400" />
                   <Tile
