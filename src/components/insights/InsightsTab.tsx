@@ -145,7 +145,7 @@ export function InsightsTab({ cycles }: { cycles: CycleSummary[] }) {
     download("attendance-insights.xls", html, "application/vnd.ms-excel");
   };
 
-  if (!cycles.length) {
+  if (!allDays.length) {
     return (
       <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
         Paste punch data in the Data tab and press Calculate to see insights.
