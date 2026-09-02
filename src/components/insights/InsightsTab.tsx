@@ -10,13 +10,13 @@ import {
 import { AlertTriangle, CheckCircle2, Download, Printer, Sheet as SheetIcon } from "lucide-react";
 import type { CycleSummary } from "@/lib/punch-types";
 import {
-  buildInsights, buildObservations, hm, signedHM, isRestDay, MONTH_NAMES,
+  buildInsights, buildObservations, hm, signedHM, MONTH_NAMES,
 } from "@/lib/insights";
 
-const GREEN = "#10b981";
-const ORANGE = "#f59e0b";
-const RED = "#ef4444";
-const BLUE = "#3b82f6";
+const GREEN = "var(--chart-2)";
+const ORANGE = "var(--chart-1)";
+const RED = "var(--destructive)";
+const BLUE = "var(--chart-3)";
 
 function fmtDate(iso: string) {
   const [y, m, d] = iso.split("-");
@@ -426,6 +426,4 @@ export function InsightsTab({ cycles }: { cycles: CycleSummary[] }) {
   );
 }
 
-const BLUEISH = "text-blue-600 dark:text-blue-400";
-
-export { isRestDay };
+const BLUEISH = "text-primary";
