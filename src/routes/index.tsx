@@ -13,6 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InsightsTab } from "@/components/insights/InsightsTab";
 import { parsePunches } from "@/lib/punch-parser";
 import { computeAllDays, groupByCycle } from "@/lib/hours-calc";
 import { Clock, CalendarDays, X, Moon, Sun } from "lucide-react";
@@ -23,6 +25,10 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Employee Hours Calculator" },
       { name: "description", content: "Offline daily and monthly attendance hours calculator." },
+        { property: "og:title", content: "Employee Hours Calculator" },
+        { property: "og:description", content: "Offline daily and monthly attendance hours calculator." },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Index,
@@ -53,10 +59,10 @@ function Index() {
   });
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  if (typeof document !== "undefined") {
+  useEffect(() => {
+    if (!mounted) return;
     document.documentElement.classList.toggle("dark", theme === "dark");
-  }
+  }, [mounted, theme]);
 
   const toggleTheme = () => {
     setTheme((prev) => {
@@ -83,7 +89,10 @@ function Index() {
     return cycles.find((c) => c.start === selectedCycle) ?? cycles[cycles.length - 1];
   }, [cycles, selectedCycle]);
 
-  const handleCalc = () => setSubmitted(raw);
+  const handleCalc = () => {
+    setSubmitted(raw);
+    setSelectedCycle("");
+  };
 
   const removeMo = (iso: string) =>
     setMoDates((prev) => prev.filter((d) => toIsoDate(d) !== iso));
@@ -109,7 +118,14 @@ function Index() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        <PunchInput value={raw} onChange={setRaw} onCalculate={handleCalc} />
+        <Tabs defaultValue="data" className="space-y-6">
+          <TabsList aria-label="Attendance views">
+            <TabsTrigger value="data">Data</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="data" className="space-y-6">
+            <PunchInput value={raw} onChange={setRaw} onCalculate={handleCalc} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
@@ -302,11 +318,17 @@ function Index() {
           </>
         )}
 
-        {submitted && cycles.length === 0 && (
-          <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-            No valid punches found. Check the format: <code>dd.mm.yyyy &nbsp; HH:mm:ss &nbsp; clock &nbsp; CODE</code>
-          </div>
-        )}
+            {submitted && cycles.length === 0 && (
+              <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+                No valid punches found. Check the format: <code>dd.mm.yyyy &nbsp; HH:mm:ss &nbsp; clock &nbsp; CODE</code>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="insights">
+            <InsightsTab cycles={cycles} />
+          </TabsContent>
+        </Tabs>
       </main>
 
       <footer className="border-t mt-8 py-4 text-center text-xs text-muted-foreground">
