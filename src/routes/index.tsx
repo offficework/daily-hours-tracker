@@ -89,7 +89,10 @@ function Index() {
     return cycles.find((c) => c.start === selectedCycle) ?? cycles[cycles.length - 1];
   }, [cycles, selectedCycle]);
 
-  const handleCalc = () => setSubmitted(raw);
+  const handleCalc = () => {
+    setSubmitted(raw);
+    setSelectedCycle("");
+  };
 
   const removeMo = (iso: string) =>
     setMoDates((prev) => prev.filter((d) => toIsoDate(d) !== iso));
