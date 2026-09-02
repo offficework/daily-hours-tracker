@@ -59,10 +59,10 @@ function Index() {
   });
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  if (typeof document !== "undefined") {
+  useEffect(() => {
+    if (!mounted) return;
     document.documentElement.classList.toggle("dark", theme === "dark");
-  }
+  }, [mounted, theme]);
 
   const toggleTheme = () => {
     setTheme((prev) => {
