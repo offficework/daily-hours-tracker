@@ -168,7 +168,7 @@ export function computeDay(
     );
   }
 
-  if (hasOout) notes.push("OOUT (no short hours)");
+  if (hasOout) notes.push("OOUT — official out counted as worked");
   if (codes.has("REG")) notes.push("REG");
   if (codes.has("POUT")) notes.push("POUT");
   if (isMo) notes.push("MO day");
@@ -231,7 +231,7 @@ export function computeDay(
   shortMins = Math.round(shortMins);
   extraMins = Math.round(extraMins);
 
-  if (hasOout || isMo || isRest) shortMins = 0;
+  if (isMo || isRest) shortMins = 0;
   if (isMo) extraMins = 0;
 
   // Violation determination
